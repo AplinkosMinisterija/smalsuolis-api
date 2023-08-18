@@ -34,7 +34,6 @@ RUN yarn install --immutable --immutable-cache --inline-builds --production \
 # Copy built artifacts from builder stage
 COPY --from=builder /app/dist/ ./dist/
 COPY --from=builder /app/database/ ./database/
-COPY --from=builder /app/templates/ ./templates/
 
 # Docker build args and environment variables
 ARG VERSION
@@ -54,4 +53,4 @@ EXPOSE 3000
 CMD ["sh", "-c", "yarn start"]
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD wget -qO- http://localhost:3000/rusys/ping || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD wget -qO- http://localhost:3000/ping || exit 1
