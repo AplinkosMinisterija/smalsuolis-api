@@ -1,0 +1,49 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: package.json
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable --immutable-cache --check-cache
+
+      - name: Run ESLint
+        run: yarn run lint:sarif
+        continue-on-error: true
+
+      - name: Upload ESLint analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: eslint-results.sarif
+          wait-for-processing: true
+          category: ESLint
+
+  validate-docker-build:
+    name: Validate if docker image builds
+    uses: AplinkosMinisterija/reusable-workflows/.github/workflows/docker-build-push.yml@main
+    with:
+      docker-image: ghcr.io/aplinkosministerija/example
+      environment: test
+      runs-on: ubuntu-latest
+      latest-tag: true
+      push: false
