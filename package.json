@@ -10,6 +10,7 @@
     "ci": "jest --watch",
     "test": "jest --coverage",
     "lint": "eslint --ext .js,.ts .",
+    "lint:sarif": "set SARIF_ESLINT_EMBED=true && yarn run lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif",
     "dc:up": "docker-compose -p smalsuolis-api up --build -d",
     "dc:down": "docker-compose -p smalsuolis-api down"
   },
