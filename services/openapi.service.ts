@@ -8,9 +8,9 @@ import { Service } from 'moleculer-decorators';
   name: 'openapi',
   mixins: [Openapi],
   settings: {
-    schemaPath: '/tools/openapi/openapi.json',
-    uiPath: '/tools/openapi/ui',
-    assetsPath: '/tools/openapi/assets',
+    schemaPath: '/openapi/openapi.json',
+    uiPath: '/openapi/ui',
+    assetsPath: '/openapi/assets',
     openapi: {
       info: {
         description: 'Smalsių žmonių sistema',
@@ -19,17 +19,6 @@ import { Service } from 'moleculer-decorators';
       },
       tags: [],
       components: {},
-    },
-  },
-  actions: {
-    generateDocs: {
-      rest: 'GET /openapi.json',
-    },
-    ui: {
-      rest: 'GET /ui',
-    },
-    assets: {
-      rest: 'GET /assets/:file',
     },
   },
 })

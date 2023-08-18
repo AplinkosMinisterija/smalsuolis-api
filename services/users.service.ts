@@ -139,6 +139,14 @@ export const USERS_DEFAULT_SCOPES = [
     update: {
       rest: null,
     },
+
+    count: {
+      rest: null,
+    },
+
+    find: {
+      rest: null,
+    },
   },
 })
 export default class UsersService extends moleculer.Service {
