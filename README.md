@@ -1,10 +1,10 @@
-# BĮIP Rūšys API
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AplinkosMinisterija/biip-rusys-api/badge)](https://securityscorecards.dev/viewer/?platform=github.com&org={AplinkosMinisterija}&repo={biip-rusys-api})
-[![License](https://img.shields.io/github/license/AplinkosMinisterija/biip-rusys-api)](https://github.com/AplinkosMinisterija/biip-rusys-api/blob/main/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/AplinkosMinisterija/biip-rusys-api)](https://github.com/AplinkosMinisterija/biip-rusys-api/issues)
-[![GitHub stars](https://img.shields.io/github/stars/AplinkosMinisterija/biip-rusys-api)](https://github.com/AplinkosMinisterija/biip-rusys-api/stargazers)
+# Smalsuolis API
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AplinkosMinisterija/smalsuolis-api/badge)](https://securityscorecards.dev/viewer/?platform=github.com&org={AplinkosMinisterija}&repo={smalsuolis-api})
+[![License](https://img.shields.io/github/license/AplinkosMinisterija/smalsuolis-api)](https://github.com/AplinkosMinisterija/smalsuolis-api/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/AplinkosMinisterija/smalsuolis-api)](https://github.com/AplinkosMinisterija/smalsuolis-api/issues)
+[![GitHub stars](https://img.shields.io/github/stars/AplinkosMinisterija/smalsuolis-api)](https://github.com/AplinkosMinisterija/smalsuolis-api/stargazers)
 
-This repository contains the source code and documentation for the BĮIP Rūšys API, developed by the Aplinkos
+This repository contains the source code and documentation for the Smalsuolis API, developed by the Aplinkos
 Ministerija.
 ## Table of Contents
 
@@ -20,24 +20,24 @@ Ministerija.
 
 ## About the Project
 
-The BĮIP Rūšys API is designed to provide information and functionalities related to activities of different water bodies located in Lithuania. It aims to support the management of water bodies.
+The Smalsuolis API is designed to provide information and functionalities related to activities of different water bodies located in Lithuania. It aims to support the management of water bodies.
 
 ## Getting Started
 
-To get started with the BĮIP Rūšys API, follow the instructions below.
+To get started with the Smalsuolis API, follow the instructions below.
 
 ### Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/AplinkosMinisterija/biip-rusys-api.git
+   git clone https://github.com/AplinkosMinisterija/smalsuolis-api.git
    ```
 
 2. Install the required dependencies:
 
    ```bash
-   cd biip-rusys-api
+   cd smalsuolis-api
    yarn install
    ```
 
@@ -51,7 +51,7 @@ To get started with the BĮIP Rūšys API, follow the instructions below.
    yarn dev
    ```
 
-The API will be available at `http://localhost:3000/rusys`.
+The API will be available at `http://localhost:3000`.
 
 ## Deployment
 
