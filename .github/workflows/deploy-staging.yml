@@ -15,4 +15,4 @@ jobs:
     with:
       environment: Staging
       enable-sentry: true
-      docker-image: ghcr.io/AplinkosMinisterija/biip-smalsuolis-api
+      docker-image: ghcr.io/AplinkosMinisterija/smalsuolis-api
