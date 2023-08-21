@@ -45,6 +45,7 @@ exports.up = function (knex) {
         .defaultTo('USER');
       commonFields(table);
     })
+    .raw(`CREATE EXTENSION IF NOT EXISTS postgis;`)
     .raw(`ALTER TABLE events ADD COLUMN geom geometry(geometry, 3346)`)
     .raw(`ALTER TABLE users ADD COLUMN geom geometry(geometry, 3346)`);
 };
