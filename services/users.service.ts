@@ -125,11 +125,11 @@ export const USERS_DEFAULT_SCOPES = [
     },
 
     get: {
-      types: [EndpointType.ADMIN],
+      auth: EndpointType.ADMIN,
     },
 
     list: {
-      types: [EndpointType.ADMIN],
+      auth: EndpointType.ADMIN,
     },
 
     remove: {

@@ -49,6 +49,8 @@ export interface Event extends BaseModelInterface {
         secure: true,
       },
 
+      name: 'string|required',
+
       geom: {
         type: 'any',
         raw: true,
@@ -73,12 +75,23 @@ export interface Event extends BaseModelInterface {
 
       url: 'string',
       body: 'string',
-      date: {
+
+      startAt: {
         type: 'date',
         required: true,
         columnType: 'datetime',
       },
-      name: 'string|required',
+
+      endAt: {
+        type: 'date',
+        required: true,
+        columnType: 'datetime',
+      },
+
+      isFullDay: {
+        type: 'boolean',
+        default: false,
+      },
 
       ...COMMON_FIELDS,
     },
