@@ -57,6 +57,15 @@ export interface App extends BaseModelInterface {
   },
 
   hooks: {
+    create: {
+      auth: EndpointType.ADMIN,
+    },
+    update: {
+      auth: EndpointType.ADMIN,
+    },
+    remove: {
+      auth: EndpointType.ADMIN,
+    },
     after: {
       create: [
         async function (ctx: Context, data: any) {
