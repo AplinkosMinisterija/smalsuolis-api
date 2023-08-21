@@ -1,0 +1,18 @@
+name: Deploy to Production
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  deploy-production:
+    name: Deploy production
+    uses: AplinkosMinisterija/reusable-workflows/.github/workflows/biip-deploy.yml@main
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+    with:
+      environment: Production
+      enable-sentry: true
+      docker-image: ghcr.io/AplinkosMinisterija/biip-smalsuolis-api
