@@ -54,6 +54,7 @@
     "csv": "^6.2.0",
     "dotenv": "^16.0.0",
     "ejs": "^3.1.8",
+    "geojsonjs": "^0.1.2",
     "ioredis": "^4.28.5",
     "jsonwebtoken": "^9.0.0",
     "knex": "^1.0.4",

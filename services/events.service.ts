@@ -23,11 +23,17 @@ import {
 } from '../modules/geometry';
 
 export interface Event extends BaseModelInterface {
+  id: number;
   app: App;
+  name: string;
   type: string;
   geom: any;
   url: string;
   body: string;
+  startAt: Date;
+  endAt?: Date;
+  // TODO:
+  externalId: string;
 }
 
 @Service({

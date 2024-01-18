@@ -2,6 +2,8 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
+import { Event } from './events.service';
+import { parse } from 'geojsonjs';
 
 @Service({
   name: 'datagov',
@@ -21,6 +23,35 @@ export default class DatagovService extends moleculer.Service {
       opt: { responseType: 'json' },
     });
 
-    return response._data;
+    // TODO: skip by doktype
+
+    for (let entry of response._data) {
+      const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
+      let geom;
+      if (matches) {
+        geom = parse({
+          type: 'Point',
+          coordinates: [matches[1], matches[2]],
+        });
+      }
+
+      if (!geom) continue;
+
+      const event: Partial<Event> = {
+        name: `${entry.dok_statusas} ${
+          entry.dokumento_kategorija.charAt(0).toLowerCase() +
+          entry.dokumento_kategorija.slice(1)
+        }`,
+        body: entry.iraso_paaiskinimas,
+        startAt: new Date(entry.iraso_data),
+        endAt: new Date(entry.iraso_data),
+        geom,
+        externalId: entry._id,
+      };
+
+      await ctx.call('events.create', event);
+
+      console.log(event, matches);
+    }
   }
 }
