@@ -1,5 +1,5 @@
 # Stage 1: Base image
-FROM node:18-alpine as base
+FROM node:20-alpine as base
 
 # Required for dependencies coming from git
 RUN apk add --no-cache git
