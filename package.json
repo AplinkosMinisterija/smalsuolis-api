@@ -65,6 +65,7 @@
     "moleculer-auto-openapi": "^1.1.3",
     "moleculer-db": "^0.8.17",
     "moleculer-decorators": "^1.3.0",
+    "moleculer-http-client": "^0.4.2",
     "moleculer-knex-filters": "github:DadPatch/moleculer-knex-filters",
     "moleculer-sentry": "^2.0.0",
     "moleculer-web": "^0.10.4",
