@@ -14,7 +14,7 @@ import {
   throwNotFoundError,
   UserAuthMeta,
 } from '../types';
-import GeometriesMixin from '../mixins/geometries.mixin';
+import PostgisMixin from 'moleculer-postgis';
 
 export enum UserType {
   ADMIN = 'ADMIN',
@@ -56,7 +56,7 @@ export const USERS_DEFAULT_SCOPES = [
       collection: 'users',
     }),
 
-    GeometriesMixin,
+    PostgisMixin({ srid: 3346 }),
   ],
 
   settings: {
