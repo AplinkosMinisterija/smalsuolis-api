@@ -23,11 +23,15 @@ import {
 } from '../modules/geometry';
 
 export interface Event extends BaseModelInterface {
-  app: App;
+  name: string;
+  app: App['id'];
   type: string;
   geom: any;
   url: string;
   body: string;
+  startAt: Date;
+  endAt: Date;
+  isFullDay: boolean;
 }
 
 @Service({
@@ -50,7 +54,6 @@ export interface Event extends BaseModelInterface {
       },
 
       name: 'string|required',
-
       geom: {
         type: 'any',
         raw: true,

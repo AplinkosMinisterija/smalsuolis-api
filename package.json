@@ -44,6 +44,7 @@
   "dependencies": {
     "@faker-js/faker": "^6.0.0-alpha.7",
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
+    "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.60.1",
     "@types/jest": "^27.4.0",
     "@types/mime-types": "^2.1.1",
