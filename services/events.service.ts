@@ -32,6 +32,7 @@ export interface Event extends BaseModelInterface {
   body: string;
   startAt: Date;
   endAt?: Date;
+  isFullDay: boolean;
   // TODO:
   externalId: string;
 }
@@ -90,7 +91,7 @@ export interface Event extends BaseModelInterface {
 
       endAt: {
         type: 'date',
-        required: true,
+        required: false,
         columnType: 'datetime',
       },
 
