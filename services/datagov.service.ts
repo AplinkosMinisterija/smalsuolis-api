@@ -46,19 +46,63 @@ interface InfostatybaEntry {
 export default class DatagovService extends moleculer.Service {
   @Action()
   async infostatyba(ctx: Context) {
+    const stats = {
+      total: 0,
+      valid: {
+        total: 0,
+        inserted: 0,
+        updated: 0,
+      },
+      invalid: {
+        total: 0,
+        no_date: 0,
+        no_geom: 0,
+        wrong_dok_type: 0,
+      },
+    };
+
+    const dokType = [
+      'SRA',
+      'ARCCR',
+      'RCCR',
+      'PNSSP',
+      'PNUR',
+      'ANN',
+      'PSR',
+      'PSP',
+      'BCPPA',
+      'LSNS',
+      'TLDR',
+      'BIPA',
+      'ISP',
+      'LRS',
+      'LAP',
+    ];
+
     const url =
       this.settings.baseUrl +
       '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json';
 
-    console.log(url);
     const response: any = await ctx.call('http.get', {
       url: `${url}?limit(9)`,
       opt: { responseType: 'json' },
     });
 
-    // TODO: skip by doktype
-
     for (let entry of response._data) {
+      stats.total++;
+
+      if (!entry.iraso_data) {
+        stats.invalid.total++;
+        stats.invalid.no_date++;
+        continue;
+      }
+
+      if (!dokType.includes(entry.dok_tipo_kodas)) {
+        stats.invalid.total++;
+        stats.invalid.wrong_dok_type++;
+        continue;
+      }
+
       const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
       let geom;
       if (matches) {
@@ -74,9 +118,12 @@ export default class DatagovService extends moleculer.Service {
           };
         }
       }
-      console.log(JSON.stringify(geom, null, 2));
 
-      if (!geom) continue;
+      if (!geom) {
+        stats.invalid.total++;
+        stats.invalid.no_geom++;
+        continue;
+      }
 
       const event: Partial<Event> = {
         name: `${entry.dok_statusas} ${
@@ -90,9 +137,27 @@ export default class DatagovService extends moleculer.Service {
         externalId: entry._id,
       };
 
-      console.log(event);
-      await ctx.call('events.create', event);
+      stats.valid.total++;
+
+      const existingEvent: Event = await ctx.call('events.findOne', {
+        query: {
+          externalId: event.externalId,
+        },
+      });
+
+      if (existingEvent) {
+        stats.valid.updated++;
+        await ctx.call('events.update', {
+          id: existingEvent.id,
+          ...event,
+        });
+      } else {
+        stats.valid.inserted++;
+        await ctx.call('events.create', event);
+      }
     }
+
+    return stats;
   }
 
   @Method
