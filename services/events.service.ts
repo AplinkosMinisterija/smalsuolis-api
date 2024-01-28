@@ -2,6 +2,7 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Method, Service } from 'moleculer-decorators';
+import PostgisMixin from 'moleculer-postgis';
 
 import DbConnection from '../mixins/database.mixin';
 import {
@@ -13,9 +14,8 @@ import {
   EndpointType,
 } from '../types';
 import { App } from './apps.service';
-import GeometriesMixin from '../mixins/geometries.mixin';
+
 import {
-  geometriesToGeomCollection,
   geometryFilterFn,
   geometryFromText,
   geometryToGeom,
@@ -44,7 +44,7 @@ export interface Event extends BaseModelInterface {
     DbConnection({
       collection: 'events',
     }),
-    GeometriesMixin,
+    PostgisMixin({ srid: 3346 }),
   ],
 
   settings: {
@@ -60,7 +60,7 @@ export interface Event extends BaseModelInterface {
 
       geom: {
         type: 'any',
-        raw: true,
+        geom: true,
         get({ value }: any) {
           if (typeof value === 'string') return;
           return value;

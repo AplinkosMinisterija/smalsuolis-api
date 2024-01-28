@@ -4422,6 +4422,16 @@ moleculer-http-client@^0.4.2:
     fastest-validator "^1.12.0"
     lodash "^4.17.21"
 
+moleculer-postgis@^0.2.7:
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/moleculer-postgis/-/moleculer-postgis-0.2.7.tgz#a3b1087e33bade1c54e18ded43facd5505b07940"
+  integrity sha512-JO/OPiyIfsV5u7KKBgozSA57CGAJEmuOBRTESiadjiJGDkuDWiu30h4aQ4/nzAEjVSc2aHOiDI2iU9QEQlMy+Q==
+  dependencies:
+    geojsonjs "^0.1.2"
+    lodash "^4.17.21"
+    moleculer "^0.14.31"
+    typescript "^4.5.5"
+
 moleculer-repl@^0.7.0:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/moleculer-repl/-/moleculer-repl-0.7.3.tgz#126e80bf7802077edf50dee841fee629328b0269"
@@ -4468,6 +4478,22 @@ moleculer@^0.14.0, moleculer@^0.14.20:
   version "0.14.31"
   resolved "https://registry.yarnpkg.com/moleculer/-/moleculer-0.14.31.tgz#55d7e24ba162673b47f150007eeb77d44c5c3529"
   integrity sha512-EbcafGr4KWfltjwrV+k8xLA7majB7g8RvsD6aQ2bwzYpBo5e8xp9jYlJPpfScoORXAwT75puAqQTrFmAaBpYqA==
+  dependencies:
+    args "^5.0.3"
+    eventemitter2 "^6.4.9"
+    fastest-validator "^1.17.0"
+    glob "^7.2.0"
+    ipaddr.js "^2.1.0"
+    kleur "^4.1.5"
+    lodash "^4.17.21"
+    lru-cache "^6.0.0"
+    node-fetch "^2.6.7"
+    recursive-watch "^1.1.4"
+
+moleculer@^0.14.31:
+  version "0.14.32"
+  resolved "https://registry.yarnpkg.com/moleculer/-/moleculer-0.14.32.tgz#93abe48d79f989fe4104d56534ff40d60c91318b"
+  integrity sha512-N5RXKS9Z01Gl6gLkf3snLgYbzU0bLci1WNEIuy2D+cjEg7i3XEArsiFHKnmNYWF6L5DajVrT8dw9EqGgvmjmOw==
   dependencies:
     args "^5.0.3"
     eventemitter2 "^6.4.9"
