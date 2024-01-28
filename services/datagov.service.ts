@@ -39,6 +39,7 @@ interface InfostatybaEntry {
 
 @Service({
   name: 'datagov',
+  timeout: 0,
   settings: {
     baseUrl: 'https://get.data.gov.lt',
   },
@@ -81,81 +82,86 @@ export default class DatagovService extends moleculer.Service {
 
     const url =
       this.settings.baseUrl +
-      '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json';
+      '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?limit(100)';
 
-    const response: any = await ctx.call('http.get', {
-      url: `${url}?limit(9)`,
-      opt: { responseType: 'json' },
-    });
-
-    for (let entry of response._data) {
-      stats.total++;
-
-      if (!entry.iraso_data) {
-        stats.invalid.total++;
-        stats.invalid.no_date++;
-        continue;
-      }
-
-      if (!dokType.includes(entry.dok_tipo_kodas)) {
-        stats.invalid.total++;
-        stats.invalid.wrong_dok_type++;
-        continue;
-      }
-
-      const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
-      let geom;
-      if (matches) {
-        geom = parse({
-          type: 'Point',
-          coordinates: [matches[1], matches[2]],
-        });
-
-        if (geom?.features?.[0]?.geometry) {
-          (geom.features[0].geometry as any).crs = {
-            type: 'name',
-            properties: { name: 'EPSG:4326' },
-          };
-        }
-      }
-
-      if (!geom) {
-        stats.invalid.total++;
-        stats.invalid.no_geom++;
-        continue;
-      }
-
-      const event: Partial<Event> = {
-        name: `${entry.dok_statusas} ${
-          entry.dokumento_kategorija.charAt(0).toLowerCase() +
-          entry.dokumento_kategorija.slice(1)
-        }`,
-        body: entry.iraso_paaiskinimas,
-        startAt: new Date(entry.iraso_data),
-        geom,
-        isFullDay: true,
-        externalId: entry._id,
-      };
-
-      stats.valid.total++;
-
-      const existingEvent: Event = await ctx.call('events.findOne', {
-        query: {
-          externalId: event.externalId,
-        },
+    let skipParamString = '';
+    let response: any;
+    do {
+      response = await ctx.call('http.get', {
+        url: `${url}${skipParamString}`,
+        opt: { responseType: 'json' },
       });
 
-      if (existingEvent) {
-        stats.valid.updated++;
-        await ctx.call('events.update', {
-          id: existingEvent.id,
-          ...event,
+      for (let entry of response._data) {
+        skipParamString = `&_id>'${entry._id}'`;
+        stats.total++;
+
+        if (!entry.iraso_data) {
+          stats.invalid.total++;
+          stats.invalid.no_date++;
+          continue;
+        }
+
+        if (!dokType.includes(entry.dok_tipo_kodas)) {
+          stats.invalid.total++;
+          stats.invalid.wrong_dok_type++;
+          continue;
+        }
+
+        const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
+        let geom;
+        if (matches) {
+          geom = parse({
+            type: 'Point',
+            coordinates: [matches[1], matches[2]],
+          });
+
+          if (geom?.features?.[0]?.geometry) {
+            (geom.features[0].geometry as any).crs = {
+              type: 'name',
+              properties: { name: 'EPSG:4326' },
+            };
+          }
+        }
+
+        if (!geom) {
+          stats.invalid.total++;
+          stats.invalid.no_geom++;
+          continue;
+        }
+
+        const event: Partial<Event> = {
+          name: `${entry.dok_statusas} ${
+            entry.dokumento_kategorija.charAt(0).toLowerCase() +
+            entry.dokumento_kategorija.slice(1)
+          }`,
+          body: entry.iraso_paaiskinimas,
+          startAt: new Date(entry.iraso_data),
+          geom,
+          isFullDay: true,
+          externalId: entry._id,
+        };
+
+        stats.valid.total++;
+
+        const existingEvent: Event = await ctx.call('events.findOne', {
+          query: {
+            externalId: event.externalId,
+          },
         });
-      } else {
-        stats.valid.inserted++;
-        await ctx.call('events.create', event);
+
+        if (existingEvent) {
+          stats.valid.updated++;
+          await ctx.call('events.update', {
+            id: existingEvent.id,
+            ...event,
+          });
+        } else {
+          stats.valid.inserted++;
+          await ctx.call('events.create', event);
+        }
       }
-    }
+    } while (response?._data?.length);
 
     return stats;
   }
