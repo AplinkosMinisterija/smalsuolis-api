@@ -53,7 +53,7 @@ export interface Event extends BaseModelInterface {
 
       geom: {
         type: 'any',
-        raw: true,
+        geom: true,
         get({ value }: any) {
           if (typeof value === 'string') return;
           return value;

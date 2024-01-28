@@ -84,7 +84,7 @@ export const USERS_DEFAULT_SCOPES = [
 
       geom: {
         type: 'any',
-        raw: true,
+        geom: true,
         populate: {
           keyField: 'id',
           action: 'users.getGeometryJson',
