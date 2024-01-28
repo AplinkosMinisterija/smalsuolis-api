@@ -66,7 +66,15 @@ export default class DatagovService extends moleculer.Service {
           type: 'Point',
           coordinates: [matches[1], matches[2]],
         });
+
+        if (geom?.features?.[0]?.geometry) {
+          (geom.features[0].geometry as any).crs = {
+            type: 'name',
+            properties: { name: 'EPSG:4326' },
+          };
+        }
       }
+      console.log(JSON.stringify(geom, null, 2));
 
       if (!geom) continue;
 
@@ -82,9 +90,8 @@ export default class DatagovService extends moleculer.Service {
         externalId: entry._id,
       };
 
-      //      await ctx.call('events.create', event);
-
       console.log(event);
+      await ctx.call('events.create', event);
     }
   }
 

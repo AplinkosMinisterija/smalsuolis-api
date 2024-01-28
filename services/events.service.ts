@@ -33,7 +33,6 @@ export interface Event extends BaseModelInterface {
   startAt: Date;
   endAt?: Date;
   isFullDay: boolean;
-  // TODO:
   externalId: string;
 }
 
@@ -56,6 +55,7 @@ export interface Event extends BaseModelInterface {
         secure: true,
       },
 
+      externalId: 'string',
       name: 'string|required',
 
       geom: {
