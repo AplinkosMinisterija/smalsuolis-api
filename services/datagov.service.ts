@@ -39,13 +39,14 @@ interface InfostatybaEntry {
 
 @Service({
   name: 'datagov',
-  timeout: 0,
   settings: {
     baseUrl: 'https://get.data.gov.lt',
   },
 })
 export default class DatagovService extends moleculer.Service {
-  @Action()
+  @Action({
+    timeout: 0,
+  })
   async infostatyba(ctx: Context) {
     const stats = {
       total: 0,
@@ -82,15 +83,21 @@ export default class DatagovService extends moleculer.Service {
 
     const url =
       this.settings.baseUrl +
-      '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?limit(100)';
+      '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?limit(1000)&sort(_id)';
 
     let skipParamString = '';
     let response: any;
     do {
-      response = await ctx.call('http.get', {
-        url: `${url}${skipParamString}`,
-        opt: { responseType: 'json' },
-      });
+      response = await ctx.call(
+        'http.get',
+        {
+          url: `${url}${skipParamString}`,
+          opt: { responseType: 'json' },
+        },
+        {
+          timeout: 0,
+        }
+      );
 
       for (let entry of response._data) {
         skipParamString = `&_id>'${entry._id}'`;
