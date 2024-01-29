@@ -7,7 +7,7 @@
     "db:migrate": "knex migrate:latest",
     "build": "tsc --build tsconfig.json",
     "dev": "yarn run db:migrate && ts-node ./node_modules/moleculer/bin/moleculer-runner.js --env --hot --repl --config moleculer.config.ts services/**/*.service.ts",
-    "start": "yarn run db:migrate && moleculer-runner --config dist/moleculer.config.js",
+    "start": "yarn run db:migrate --knexfile ./dist/knexfile.js && moleculer-runner --config dist/moleculer.config.js",
     "cli": "moleculer connect NATS",
     "lint": "eslint --ext .js,.ts .",
     "lint:sarif": "set SARIF_ESLINT_EMBED=true && yarn run lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif",
