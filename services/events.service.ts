@@ -54,15 +54,6 @@ export interface Event extends BaseModelInterface {
       geom: {
         type: 'any',
         geom: true,
-        get({ value }: any) {
-          if (typeof value === 'string') return;
-          return value;
-        },
-        filterFn: ({ value }: any) => geometryFilterFn(value),
-        populate: {
-          keyField: 'id',
-          action: 'events.getGeometryJson',
-        },
       },
 
       app: {
