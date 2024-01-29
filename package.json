@@ -1,18 +1,19 @@
 {
-  "name": "smalsuolis",
+  "name": "smalsuolis-api",
   "version": "1.0.0",
   "description": "My Moleculer-based microservices project",
+  "prettier": "@aplinkosministerija/biip-prettier-config",
   "scripts": {
+    "db:migrate": "knex migrate:latest",
     "build": "tsc --build tsconfig.json",
-    "dev": "ts-node ./node_modules/moleculer/bin/moleculer-runner.js --env --hot --repl --config moleculer.config.ts services/**/*.service.ts",
-    "start": "moleculer-runner --config dist/moleculer.config.js",
+    "dev": "yarn run db:migrate && ts-node ./node_modules/moleculer/bin/moleculer-runner.js --env --hot --repl --config moleculer.config.ts services/**/*.service.ts",
+    "start": "yarn run db:migrate && moleculer-runner --config dist/moleculer.config.js",
     "cli": "moleculer connect NATS",
-    "ci": "jest --watch",
-    "test": "jest --coverage",
     "lint": "eslint --ext .js,.ts .",
     "lint:sarif": "set SARIF_ESLINT_EMBED=true && yarn run lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif",
     "dc:up": "docker-compose -p smalsuolis-api up --build -d",
-    "dc:down": "docker-compose -p smalsuolis-api down"
+    "dc:down": "docker-compose -p smalsuolis-api down",
+    "prepare": "husky install"
   },
   "keywords": [
     "microservices",
@@ -20,12 +21,12 @@
   ],
   "author": "",
   "devDependencies": {
+    "@aplinkosministerija/biip-prettier-config": "^1.1.0",
+    "@aplinkosministerija/eslint-config-biip-api": "^1.0.0",
     "@microsoft/eslint-formatter-sarif": "^3.0.0",
-    "@types/bcrypt": "^5.0.0",
-    "@types/bcryptjs": "^2.4.2",
-    "@types/ejs": "^3.1.1",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/lodash": "^4.14.178",
+    "@types/node": "^20.4.5",
     "@types/qs": "^6.9.7",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
@@ -34,74 +35,48 @@
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "eslint-plugin-prettier": "^4.0.0",
-    "jest": "^27.5.1",
-    "jest-cli": "^27.5.1",
-    "moleculer-repl": "^0.7.0",
+    "husky": "^9.0.7",
+    "lint-staged": "^15.2.0",
     "prettier": "2.5.1",
-    "ts-jest": "^27.1.3",
     "ts-node": "^10.5.0"
   },
   "dependencies": {
-    "@faker-js/faker": "^6.0.0-alpha.7",
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
     "@sentry/node": "^7.60.1",
-    "@types/jest": "^27.4.0",
-    "@types/mime-types": "^2.1.1",
-    "@types/mkdirp": "^1.0.2",
-    "@types/node": "^20.4.5",
     "biip-auth-nodejs": "github:DadPatch/biip-auth-nodejs",
-    "bullmq": "^4.1.0",
-    "csv": "^6.2.0",
     "dotenv": "^16.0.0",
-    "ejs": "^3.1.8",
     "geojsonjs": "^0.1.2",
     "ioredis": "^4.28.5",
     "jsonwebtoken": "^9.0.0",
-    "knex": "^1.0.4",
+    "knex": "2.4.0",
     "lodash": "^4.17.21",
-    "mime-types": "^2.1.35",
-    "minio": "^7.0.32",
-    "mkdirp": "^1.0.4",
     "moleculer": "^0.14.20",
     "moleculer-auto-openapi": "^1.1.3",
     "moleculer-db": "^0.8.17",
     "moleculer-decorators": "^1.3.0",
     "moleculer-knex-filters": "github:DadPatch/moleculer-knex-filters",
     "moleculer-postgis": "^0.3.2",
+    "moleculer-repl": "^0.7.4",
     "moleculer-sentry": "^2.0.0",
     "moleculer-web": "^0.10.4",
-    "moment": "^2.29.4",
-    "moment-timezone": "^0.5.43",
     "nats": "^2.6.0",
     "objection": "^3.0.1",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
-    "postmark": "^3.0.15",
-    "puppeteer": "^17.1.3",
-    "redlock": "^4.2.0",
+    "postmark": "^4.0.2",
     "typescript": "^4.5.5"
   },
   "engines": {
     "node": ">=20.0.0 <21.0.0"
   },
-  "jest": {
-    "coverageDirectory": "<rootDir>/coverage",
-    "testEnvironment": "node",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint"
     ],
-    "transform": {
-      "^.+\\.(ts|tsx)$": "ts-jest"
-    },
-    "testMatch": [
-      "**/*.spec.(ts|js)"
-    ],
-    "globals": {
-      "ts-jest": {
-        "tsconfig": "tsconfig.json"
-      }
-    }
+    "*.{md,html,css}": "prettier --write"
+  },
+  "eslintConfig": {
+    "extends": "@aplinkosministerija/eslint-config-biip-api"
   }
 }
