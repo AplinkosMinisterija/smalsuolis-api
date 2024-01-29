@@ -60,17 +60,7 @@ export interface Event extends BaseModelInterface {
 
       geom: {
         type: 'any',
-        raw: true,
-        //geom: true,
-        get({ value }: any) {
-          if (typeof value === 'string') return;
-          return value;
-        },
-        filterFn: ({ value }: any) => geometryFilterFn(value),
-        populate: {
-          keyField: 'id',
-          action: 'events.getGeometryJson',
-        },
+        geom: true,
       },
 
       app: {
@@ -110,12 +100,6 @@ export interface Event extends BaseModelInterface {
 
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
-  hooks: {
-    before: {
-      create: ['parseGeomField'],
-      update: ['parseGeomField'],
-    },
-  },
   actions: {
     create: {
       auth: EndpointType.APP,
@@ -140,28 +124,4 @@ export interface Event extends BaseModelInterface {
     },
   },
 })
-export default class EventsService extends moleculer.Service {
-  @Method
-  async parseGeomField(ctx: Context<{ geom: GeomFeatureCollection }>) {
-    const { geom } = ctx.params;
-
-    const errMessage = 'Geometry as feature collection should be passed';
-
-    if (!geom?.features?.length) {
-      throw new moleculer.Errors.ValidationError(errMessage);
-    }
-
-    const adapter = await this.getAdapter(ctx);
-    const table = adapter.getTable();
-
-    try {
-      const geomItem = geom.features[0];
-      const value = geometryToGeom(geomItem.geometry);
-      ctx.params.geom = table.client.raw(geometryFromText(value));
-    } catch (err) {
-      throw new moleculer.Errors.ValidationError(err.message);
-    }
-
-    return ctx;
-  }
-}
+export default class EventsService extends moleculer.Service {}
