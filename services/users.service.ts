@@ -3,18 +3,19 @@
 import moleculer, { Context } from 'moleculer';
 import { Action, Event, Service } from 'moleculer-decorators';
 
+import PostgisMixin from 'moleculer-postgis';
 import DbConnection from '../mixins/database.mixin';
 import {
-  COMMON_FIELDS,
-  COMMON_DEFAULT_SCOPES,
-  COMMON_SCOPES,
-  FieldHookCallback,
   BaseModelInterface,
+  COMMON_DEFAULT_SCOPES,
+  COMMON_FIELDS,
+  COMMON_SCOPES,
   EndpointType,
+  FieldHookCallback,
   throwNotFoundError,
   UserAuthMeta,
 } from '../types';
-import PostgisMixin from 'moleculer-postgis';
+import { App } from './apps.service';
 
 export enum UserType {
   ADMIN = 'ADMIN',
@@ -30,16 +31,14 @@ export interface User extends BaseModelInterface {
   isExpert: boolean;
   expertSpecies: number[];
   isServer?: boolean;
+  geom?: any;
+  apps?: App[];
 }
 
 const VISIBLE_TO_USER_SCOPE = 'tenant';
 const NOT_ADMINS_SCOPE = 'notAdmins';
 
-const AUTH_PROTECTED_SCOPES = [
-  ...COMMON_DEFAULT_SCOPES,
-  VISIBLE_TO_USER_SCOPE,
-  NOT_ADMINS_SCOPE,
-];
+const AUTH_PROTECTED_SCOPES = [...COMMON_DEFAULT_SCOPES, VISIBLE_TO_USER_SCOPE, NOT_ADMINS_SCOPE];
 
 export const USERS_WITHOUT_AUTH_SCOPES = [`-${VISIBLE_TO_USER_SCOPE}`];
 const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
@@ -87,17 +86,22 @@ export const USERS_DEFAULT_SCOPES = [
         geom: true,
       },
 
+      apps: {
+        type: 'array',
+        columnType: 'json',
+        items: { type: 'number' },
+        populate: {
+          action: 'apps.resolve',
+        },
+      },
+
       authUser: {
         type: 'number',
         columnType: 'integer',
         columnName: 'authUserId',
         populate: 'auth.users.get',
         async onRemove({ ctx, entity }: FieldHookCallback) {
-          await ctx.call(
-            'auth.users.remove',
-            { id: entity.authUserId },
-            { meta: ctx?.meta }
-          );
+          await ctx.call('auth.users.remove', { id: entity.authUserId }, { meta: ctx?.meta });
         },
       },
 
@@ -164,7 +168,7 @@ export default class UsersService extends moleculer.Service {
         email: string;
       },
       UserAuthMeta
-    >
+    >,
   ) {
     const { personalCode, email } = ctx.params;
     const data: any = {
@@ -250,16 +254,14 @@ export default class UsersService extends moleculer.Service {
       email?: string;
       phone?: string;
       update?: boolean;
-    }>
+    }>,
   ) {
     const { authUser, update, firstName, lastName, email, phone } = ctx.params;
     if (!authUser || !authUser.id) return;
 
     const scope = [...USERS_WITHOUT_AUTH_SCOPES];
 
-    const authUserIsAdmin = ['SUPER_ADMIN', UserType.ADMIN].includes(
-      authUser.type
-    );
+    const authUserIsAdmin = ['SUPER_ADMIN', UserType.ADMIN].includes(authUser.type);
 
     if (authUserIsAdmin) {
       scope.push(...USERS_WITHOUT_NOT_ADMINS_SCOPE);
@@ -356,7 +358,7 @@ export default class UsersService extends moleculer.Service {
         phone: string;
       },
       UserAuthMeta
-    >
+    >,
   ) {
     const { id, email, phone } = ctx.params;
 

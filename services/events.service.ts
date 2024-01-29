@@ -1,26 +1,22 @@
 'use strict';
 
+import { isEmpty } from 'lodash';
 import moleculer, { Context } from 'moleculer';
-import { Method, Service } from 'moleculer-decorators';
+import { Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
 
 import DbConnection from '../mixins/database.mixin';
 import {
-  COMMON_FIELDS,
-  COMMON_DEFAULT_SCOPES,
-  COMMON_SCOPES,
-  FieldHookCallback,
   BaseModelInterface,
+  COMMON_DEFAULT_SCOPES,
+  COMMON_FIELDS,
+  COMMON_SCOPES,
   EndpointType,
+  FieldHookCallback,
+  UserAuthMeta,
 } from '../types';
+import { getEventIdsByUserInfo } from '../utils/queries';
 import { App } from './apps.service';
-
-import {
-  geometryFilterFn,
-  geometryFromText,
-  geometryToGeom,
-  GeomFeatureCollection,
-} from '../modules/geometry';
 
 export interface Event extends BaseModelInterface {
   app: App;
@@ -89,10 +85,23 @@ export interface Event extends BaseModelInterface {
 
     scopes: {
       ...COMMON_SCOPES,
+      async visibleToUser(query: any, ctx: Context<null, UserAuthMeta>) {
+        const { user } = ctx?.meta;
+        if (!user?.id) return query;
+
+        const eventIds = await getEventIdsByUserInfo(user);
+
+        if (!isEmpty(eventIds)) {
+          return { ...query, id: { $in: eventIds.map((i: any) => i.id) } };
+        }
+
+        return query;
+      },
     },
 
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
+
   actions: {
     create: {
       auth: EndpointType.APP,
