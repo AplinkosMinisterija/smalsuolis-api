@@ -57,7 +57,7 @@
     "geojsonjs": "^0.1.2",
     "ioredis": "^4.28.5",
     "jsonwebtoken": "^9.0.0",
-    "knex": "^1.0.4",
+    "knex": "^2.4.0",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "minio": "^7.0.32",
