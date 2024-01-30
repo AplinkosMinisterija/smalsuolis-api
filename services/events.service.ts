@@ -1,7 +1,7 @@
 'use strict';
 
 import { isEmpty } from 'lodash';
-import moleculer, { Context } from 'moleculer';
+import moleculer, { Context, GenericObject } from 'moleculer';
 import { Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
 
@@ -89,14 +89,14 @@ export interface Event extends BaseModelInterface {
 
     scopes: {
       ...COMMON_SCOPES,
-      async visibleToUser(query: any, ctx: Context<null, UserAuthMeta>) {
+      async visibleToUser(query: GenericObject, ctx: Context<null, UserAuthMeta>) {
         const { user } = ctx?.meta;
 
         if (!user?.id || (isEmpty(user.geom) && isEmpty(user.apps))) return query;
 
-        const eventIds = await getEventIdsByUserInfo(user);
+        const eventIds: { id: number }[] = await getEventIdsByUserInfo(user);
 
-        return { ...query, id: { $in: eventIds.map((i: any) => i.id) } };
+        return { ...query, id: { $in: eventIds.map((i) => i.id) } };
       },
     },
 
