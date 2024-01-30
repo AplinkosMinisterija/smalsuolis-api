@@ -99,7 +99,7 @@ export interface Event extends BaseModelInterface {
       },
     },
 
-    defaultScopes: [...COMMON_DEFAULT_SCOPES],
+    defaultScopes: [...COMMON_DEFAULT_SCOPES, 'visibleToUser'],
   },
 
   actions: {
