@@ -208,30 +208,14 @@ export default class UsersService extends moleculer.Service {
   ) {
     const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
 
-    function getInviteData(data: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone?: string;
-    }) {
-      const inviteData: any = {
-        apps: [ctx.meta?.app?.id],
-        throwErrors: true,
-      };
-
-      inviteData.firstName = data.firstName;
-      inviteData.lastName = data.lastName;
-      inviteData.email = data.email;
-      inviteData.phone = data.phone;
-      if (authGroupId) {
-        inviteData.unassignExistingGroups = false;
-        inviteData.groups = [{ id: authGroupId, role: 'USER' }];
-      }
-
-      return inviteData;
-    }
-
-    const inviteData = getInviteData(ctx.params);
+    const inviteData = {
+      firstName: ctx.params.firstName,
+      lastName: ctx.params.lastName,
+      email: ctx.params.email,
+      phone: ctx.params.phone,
+      groups: [{ id: authGroupId, role: 'USER' }],
+      unassignExistingGroups: false,
+    };
 
     const authUser: any = await ctx.call('auth.users.create', inviteData);
 
