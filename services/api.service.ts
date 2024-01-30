@@ -215,7 +215,7 @@ export default class ApiService extends moleculer.Service {
     const auth = req.headers.authorization;
     ctx.meta.app = await ctx.call('auth.apps.resolveToken');
 
-    if ([EndpointType.PUBLIC, EndpointType.APP].includes(actionAuthType)) {
+    if ([EndpointType.PUBLIC, EndpointType.APP].includes(actionAuthType) && !auth) {
       return Promise.resolve(null);
     }
 
