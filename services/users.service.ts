@@ -138,6 +138,7 @@ export const USERS_DEFAULT_SCOPES = [
 export default class UsersService extends moleculer.Service {
   @Action({
     rest: 'POST /',
+    auth: EndpointType.PUBLIC,
     params: {
       firstName: 'string',
       lastName: 'string',
@@ -191,7 +192,7 @@ export default class UsersService extends moleculer.Service {
     let authUser: any;
     const inviteData = getInviteData(ctx.params);
 
-    authUser = await ctx.call('auth.users.invite', inviteData);
+    authUser = await ctx.call('auth.users.create', inviteData);
 
     const user: User = await ctx.call('users.findOrCreate', {
       authUser,
