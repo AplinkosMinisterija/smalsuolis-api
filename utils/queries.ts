@@ -11,7 +11,7 @@ const getAdapter = () => {
   return knexAdapter;
 };
 
-export async function getEventIdsByUserInfo(user: User): Promise<any[]> {
+export async function getEventIdsByUserInfo(user: User): Promise<{ id: number }[]> {
   const eventsTable = 'events';
   const knex = getAdapter();
 
