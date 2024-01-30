@@ -104,15 +104,6 @@ export interface Event extends BaseModelInterface {
   },
 
   actions: {
-    create: {
-      auth: EndpointType.APP,
-    },
-    update: {
-      auth: EndpointType.APP,
-    },
-    remove: {
-      auth: EndpointType.APP,
-    },
     list: {
       auth: EndpointType.PUBLIC,
     },
