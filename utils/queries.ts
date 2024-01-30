@@ -18,8 +18,8 @@ export async function getEventIdsByUserInfo(user: User): Promise<{ id: number }[
   const query = knex.select(`${eventsTable}.id`).from(eventsTable);
 
   if (!isEmpty(user.geom)) {
-    query.whereRaw(`ST_Intersects(:user_geom::geometry,${eventsTable}.geom)`, {
-      user_geom: user.geom,
+    query.whereRaw(`ST_Intersects(:geom::geometry,${eventsTable}.geom)`, {
+      geom: user.geom,
     });
   }
 
