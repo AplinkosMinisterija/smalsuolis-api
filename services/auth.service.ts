@@ -42,6 +42,14 @@ import { EndpointType, throwNotFoundError, UserAuthMeta } from '../types';
       auth: EndpointType.PUBLIC,
       rest: 'POST /refresh',
     },
+    changePasswordVerify: {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /change/verify',
+    },
+    changePasswordAccept: {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /change/accept',
+    },
   },
   hooks: {
     after: {
