@@ -58,14 +58,12 @@ export default class SeedService extends moleculer.Service {
   async infostatyba(ctx: Context, app: App['id']) {
     await this.broker.waitForServices(['datagov']);
 
-    console.log('seeding infostatyba, app id: ', app);
     const count: number = await ctx.call('events.count', {
       query: { app },
     });
 
     if (!count) {
-      console.log('no infostatyba records found, seeding');
-      await ctx.call('datagov.infostatyba', { limit: process.env.NODE_ENV === 'local' ? 100 : 0 });
+      ctx.call('datagov.infostatyba', { limit: process.env.NODE_ENV === 'local' ? 100 : 0 });
     }
   }
 

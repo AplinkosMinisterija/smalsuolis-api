@@ -38,7 +38,7 @@ export default class DatagovService extends moleculer.Service {
       limit: {
         type: 'number',
         optional: true,
-        defaut: () => 0,
+        defaut: 0,
       },
     },
   })
@@ -118,7 +118,7 @@ export default class DatagovService extends moleculer.Service {
 
         const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
         let geom;
-        if (matches) {
+        if (matches?.length) {
           geom = parse({
             type: 'Point',
             coordinates: [Number(matches[2]), Number(matches[1])],
