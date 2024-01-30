@@ -137,6 +137,52 @@ export const USERS_DEFAULT_SCOPES = [
 })
 export default class UsersService extends moleculer.Service {
   @Action({
+    rest: 'PATCH /me',
+    auth: EndpointType.USER,
+    params: {
+      firstName: 'string',
+      lastName: 'string',
+      phone: 'string|optional',
+      password: 'string|optional',
+      oldPassword: 'string|optional',
+    },
+  })
+  async patchMe(
+    ctx: Context<
+      {
+        firstName: string;
+        lastName: string;
+        phone?: string;
+        password?: string;
+        oldPassword?: string;
+      },
+      UserAuthMeta
+    >,
+  ) {
+    const { firstName, lastName, phone, password, oldPassword } = ctx.params;
+
+    const user = await ctx.call('users.update', {
+      id: ctx.meta.user.id,
+      firstName,
+      lastName,
+      phone,
+    });
+
+    if (password && oldPassword) {
+      await ctx.call('auth.users.update', {
+        id: ctx.meta.user.authUser,
+        firstName,
+        lastName,
+        phone,
+        password,
+        oldPassword,
+      });
+    }
+
+    return user;
+  }
+
+  @Action({
     rest: 'POST /',
     auth: EndpointType.PUBLIC,
     params: {
