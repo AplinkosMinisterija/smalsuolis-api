@@ -139,37 +139,71 @@ export default class UsersService extends moleculer.Service {
   @Action({
     rest: 'POST /',
     params: {
-      personalCode: 'any',
       firstName: 'string',
       lastName: 'string',
+      phone: 'string|optional',
       email: 'string',
-      phone: 'string',
+      throwErrors: {
+        type: 'boolean',
+        optional: true,
+        default: true,
+      },
     },
-    types: [EndpointType.ADMIN],
   })
   async invite(
     ctx: Context<
       {
-        personalCode: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
         email: string;
+        throwErrors: boolean;
       },
       UserAuthMeta
     >,
   ) {
-    const { personalCode, email } = ctx.params;
-    const data: any = {
-      personalCode,
-      notify: [email],
-    };
+    const { throwErrors } = ctx.params;
+    const authGroupId: number = Number(process.env.AUTH_GPOUP_ID);
 
-    let authGroupId;
+    function getInviteData(data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+    }) {
+      const inviteData: any = {
+        apps: [ctx.meta?.app?.id],
+        throwErrors,
+      };
 
-    const authUser: any = await ctx.call('auth.users.invite', data);
+      inviteData.firstName = data.firstName;
+      inviteData.lastName = data.lastName;
+      inviteData.email = data.email;
+      inviteData.phone = data.phone;
+      if (authGroupId) {
+        inviteData.unassignExistingGroups = false;
+        inviteData.groups = [{ id: authGroupId, role: 'USER' }];
+      }
+
+      return inviteData;
+    }
+
+    let authUser: any;
+    const inviteData = getInviteData(ctx.params);
+
+    authUser = await ctx.call('auth.users.invite', inviteData);
 
     const user: User = await ctx.call('users.findOrCreate', {
-      authUser: authUser,
-      ...ctx.params,
+      authUser,
+      firstName: ctx.params.firstName,
+      lastName: ctx.params.lastName,
+      email: ctx.params.email,
+      phone: ctx.params.phone,
     });
+
+    if (authUser?.url) {
+      return { ...user, url: authUser.url };
+    }
 
     return user;
   }
