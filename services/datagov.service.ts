@@ -38,7 +38,7 @@ export default class DatagovService extends moleculer.Service {
       limit: {
         type: 'number',
         optional: true,
-        defaut: 0,
+        default: 0,
       },
     },
   })
