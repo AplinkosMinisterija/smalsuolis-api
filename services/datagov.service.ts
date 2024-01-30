@@ -120,15 +120,8 @@ export default class DatagovService extends moleculer.Service {
         if (matches) {
           geom = parse({
             type: 'Point',
-            coordinates: [matches[1], matches[2]],
+            coordinates: [Number(matches[2]), Number(matches[1])],
           });
-
-          if (geom?.features?.[0]?.geometry) {
-            (geom.features[0].geometry as any).crs = {
-              type: 'name',
-              properties: { name: 'EPSG:4326' },
-            };
-          }
         }
 
         if (!geom) {
