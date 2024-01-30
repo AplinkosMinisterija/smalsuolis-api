@@ -193,11 +193,6 @@ export default class UsersService extends moleculer.Service {
       lastName: 'string',
       phone: 'string|optional',
       email: 'string',
-      throwErrors: {
-        type: 'boolean',
-        optional: true,
-        default: true,
-      },
     },
   })
   async invite(
@@ -207,12 +202,10 @@ export default class UsersService extends moleculer.Service {
         lastName: string;
         phone?: string;
         email: string;
-        throwErrors: boolean;
       },
       UserAuthMeta
     >,
   ) {
-    const { throwErrors } = ctx.params;
     const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
 
     function getInviteData(data: {
@@ -223,7 +216,7 @@ export default class UsersService extends moleculer.Service {
     }) {
       const inviteData: any = {
         apps: [ctx.meta?.app?.id],
-        throwErrors,
+        throwErrors: true,
       };
 
       inviteData.firstName = data.firstName;
