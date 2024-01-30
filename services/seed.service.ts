@@ -3,7 +3,7 @@
 import moleculer, { Context, ServiceBroker } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { User } from './users.service';
-const fs = require('fs');
+import { APPS, App } from './apps.service';
 
 @Service({
   name: 'seed',
@@ -17,14 +17,54 @@ export default class SeedService extends moleculer.Service {
       const data: any[] = await ctx.call('auth.getSeedData');
 
       for (const item of data) {
-        const user: User = await ctx.call('users.findOrCreate', {
+        await ctx.call('users.findOrCreate', {
           authUser: item,
           update: true,
         });
       }
     }
 
+    const apps: Record<string, App['id']> = await this.seedApps(ctx);
+
+    await this.infostatyba(ctx, apps.infostatyba);
+
     return true;
+  }
+
+  @Method
+  async seedApps(ctx: Context) {
+    await this.broker.waitForServices(['apps']);
+    const idsMap: Record<string, App['id']> = {};
+
+    for (const [key, name] of Object.entries(APPS)) {
+      let app: App = await ctx.call('apps.findOne', {
+        query: { key },
+      });
+
+      if (!app) {
+        app = await ctx.call('apps.create', <Partial<App>>{
+          key,
+          name,
+        });
+      }
+
+      idsMap[key] = app.id;
+    }
+
+    return idsMap;
+  }
+
+  @Method
+  async infostatyba(ctx: Context, app: App['id']) {
+    await this.broker.waitForServices(['datagov']);
+
+    const count: number = await ctx.call('events.count', {
+      query: { app },
+    });
+
+    if (!count) {
+      ctx.call('datagov.infostatyba', { limit: process.env.NODE_ENV === 'local' ? 100 : 0 });
+    }
   }
 
   @Action()
