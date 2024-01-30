@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
+    "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.60.1",
     "biip-auth-nodejs": "github:DadPatch/biip-auth-nodejs",
     "dotenv": "^16.0.0",
@@ -54,6 +55,7 @@
     "moleculer-auto-openapi": "^1.1.3",
     "moleculer-db": "^0.8.17",
     "moleculer-decorators": "^1.3.0",
+    "moleculer-http-client": "^0.4.2",
     "moleculer-knex-filters": "github:DadPatch/moleculer-knex-filters",
     "moleculer-postgis": "^0.3.2",
     "moleculer-repl": "^0.7.4",

@@ -12,18 +12,22 @@ import {
   COMMON_FIELDS,
   COMMON_SCOPES,
   EndpointType,
-  FieldHookCallback,
   UserAuthMeta,
 } from '../types';
 import { getEventIdsByUserInfo } from '../utils/queries';
-import { App } from './apps.service';
 
 export interface Event extends BaseModelInterface {
-  app: App;
+  id: number;
+  app: number;
+  name: string;
   type: string;
   geom: any;
   url: string;
   body: string;
+  startAt: Date;
+  endAt?: Date;
+  isFullDay: boolean;
+  externalId: string;
 }
 
 @Service({
@@ -45,6 +49,7 @@ export interface Event extends BaseModelInterface {
         secure: true,
       },
 
+      externalId: 'string',
       name: 'string|required',
 
       geom: {
@@ -57,7 +62,6 @@ export interface Event extends BaseModelInterface {
         columnType: 'integer',
         hidden: 'byDefault',
         columnName: 'appId',
-        onCreate: ({ ctx }: FieldHookCallback) => ctx.meta.app?.id,
       },
 
       url: 'string',
@@ -71,7 +75,7 @@ export interface Event extends BaseModelInterface {
 
       endAt: {
         type: 'date',
-        required: true,
+        required: false,
         columnType: 'datetime',
       },
 
@@ -87,15 +91,12 @@ export interface Event extends BaseModelInterface {
       ...COMMON_SCOPES,
       async visibleToUser(query: any, ctx: Context<null, UserAuthMeta>) {
         const { user } = ctx?.meta;
-        if (!user?.id) return query;
+
+        if (!user?.id || (isEmpty(user.geom) && isEmpty(user.apps))) return query;
 
         const eventIds = await getEventIdsByUserInfo(user);
 
-        if (!isEmpty(eventIds)) {
-          return { ...query, id: { $in: eventIds.map((i: any) => i.id) } };
-        }
-
-        return query;
+        return { ...query, id: { $in: eventIds.map((i: any) => i.id) } };
       },
     },
 
