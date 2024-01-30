@@ -62,7 +62,7 @@ export const APPS = {
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
 
-  hooks: {
+  actions: {
     create: {
       auth: EndpointType.ADMIN,
     },
@@ -72,65 +72,6 @@ export const APPS = {
     remove: {
       auth: EndpointType.ADMIN,
     },
-    after: {
-      create: [
-        async function (ctx: Context, data: any) {
-          return await ctx.call('apps.regenerateApiKey', { id: data.id });
-        },
-      ],
-    },
   },
 })
-export default class AppsService extends moleculer.Service {
-  @Action({
-    params: {
-      id: {
-        type: 'number',
-        convert: true,
-      },
-    },
-    rest: 'POST /:id/generate',
-    auth: EndpointType.ADMIN,
-  })
-  async regenerateApiKey(ctx: Context<{ id: number }>) {
-    const app: App = await ctx.call('apps.resolve', { id: ctx.params.id });
-    const apiKey = await generateToken(
-      {
-        id: app.id,
-        type: app.type,
-        name: app.name,
-      },
-      60 * 60 * 365 * 100,
-    );
-    await ctx.call(
-      'apps.update',
-      {
-        id: app.id,
-        apiKey,
-      },
-      { meta: ctx.meta },
-    );
-
-    app.apiKey = apiKey;
-    return app;
-  }
-
-  @Action({
-    params: {
-      key: 'string',
-    },
-    cache: {
-      keys: ['key'],
-    },
-  })
-  async verifyKey(ctx: Context<{ key: string }>) {
-    const app = (await verifyToken(ctx.params.key)) as App;
-    if (!app) return false;
-
-    const appDb: App = await ctx.call('apps.resolve', { id: app.id });
-
-    if (!appDb || appDb.type !== app.type) return false;
-
-    return appDb;
-  }
-}
+export default class AppsService extends moleculer.Service {}
