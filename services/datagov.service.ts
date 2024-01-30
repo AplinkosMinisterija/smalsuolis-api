@@ -4,13 +4,32 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
 import { Event } from './events.service';
 import { parse } from 'geojsonjs';
-import { APPS, App } from './apps.service';
+import { App } from './apps.service';
+
+// @ts-ignore
+import Cron from '@r2d2bzh/moleculer-cron';
 
 @Service({
   name: 'datagov',
   settings: {
     baseUrl: 'https://get.data.gov.lt',
   },
+
+  mixins: [Cron],
+
+  crons: [
+    {
+      name: 'infostatyba',
+      cronTime: '0 3 * * *',
+      timeZone: 'Europe/Vilnius',
+
+      async onTick() {
+        await this.call('datagov.infostatyba', {
+          limit: process.env.NODE_ENV === 'local' ? 100 : 0,
+        });
+      },
+    },
+  ],
 })
 export default class DatagovService extends moleculer.Service {
   @Action({
