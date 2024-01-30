@@ -16,9 +16,14 @@ import {
 
 export interface App extends BaseModelInterface {
   name: string;
+  key: string;
   apiKey: string;
   type: string;
 }
+
+export const APPS = {
+  infostatyba: 'Infostatyba',
+};
 
 @Service({
   name: 'apps',
@@ -39,6 +44,7 @@ export interface App extends BaseModelInterface {
         secure: true,
       },
 
+      key: 'string|required',
       name: 'string|required',
 
       apiKey: {
@@ -94,7 +100,7 @@ export default class AppsService extends moleculer.Service {
         type: app.type,
         name: app.name,
       },
-      60 * 60 * 365 * 100
+      60 * 60 * 365 * 100,
     );
     await ctx.call(
       'apps.update',
@@ -102,7 +108,7 @@ export default class AppsService extends moleculer.Service {
         id: app.id,
         apiKey,
       },
-      { meta: ctx.meta }
+      { meta: ctx.meta },
     );
 
     app.apiKey = apiKey;

@@ -13,18 +13,10 @@ import {
   BaseModelInterface,
   EndpointType,
 } from '../types';
-import { App } from './apps.service';
-
-import {
-  geometryFilterFn,
-  geometryFromText,
-  geometryToGeom,
-  GeomFeatureCollection,
-} from '../modules/geometry';
 
 export interface Event extends BaseModelInterface {
   id: number;
-  app: App;
+  app: number;
   name: string;
   type: string;
   geom: any;
@@ -68,7 +60,6 @@ export interface Event extends BaseModelInterface {
         columnType: 'integer',
         hidden: 'byDefault',
         columnName: 'appId',
-        onCreate: ({ ctx }: FieldHookCallback) => ctx.meta.app?.id,
       },
 
       url: 'string',

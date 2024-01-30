@@ -1,41 +1,10 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
+import { Action, Service } from 'moleculer-decorators';
 import { Event } from './events.service';
 import { parse } from 'geojsonjs';
-
-interface InfostatybaEntry {
-  _type: string;
-  _id: string;
-  _revision: string;
-  _base: null;
-  id: string;
-  projekto_id: string;
-  statinio_id: string;
-  projekto_pavadinimas: string;
-  projekto_reg_nr: string;
-  projekto_metai: number;
-  unikalus_numeris: string;
-  statinio_kategorija: string;
-  adresas: string;
-  statybos_rusis: string;
-  statinio_pavadinimas: string;
-  pastatymo_metai: number;
-  kadastro_nr: string;
-  ploto_reg_tipas: string;
-  sklypo_reg_statusas: null;
-  dokumento_reg_nr: string;
-  dokumento_reg_data: string;
-  iraso_paaiskinimas: string;
-  iraso_data: string;
-  dok_statusas: string;
-  dok_tipo_kodas: string;
-  dokumento_kategorija: string;
-  dok_irasas: string;
-  taskas_lks: string;
-  taskas_wgs: string;
-}
+import { APPS, App } from './apps.service';
 
 @Service({
   name: 'datagov',
@@ -46,8 +15,21 @@ interface InfostatybaEntry {
 export default class DatagovService extends moleculer.Service {
   @Action({
     timeout: 0,
+    params: {
+      limit: {
+        type: 'number',
+        optional: true,
+        defaut: () => 0,
+      },
+    },
   })
-  async infostatyba(ctx: Context) {
+  async infostatyba(ctx: Context<{ limit: number }>) {
+    const app: App = await ctx.call('apps.findOne', {
+      query: { key: 'infostatyba' },
+    });
+
+    const { limit } = ctx.params;
+
     const stats = {
       total: 0,
       valid: {
@@ -96,7 +78,7 @@ export default class DatagovService extends moleculer.Service {
         },
         {
           timeout: 0,
-        }
+        },
       );
 
       for (let entry of response._data) {
@@ -132,12 +114,12 @@ export default class DatagovService extends moleculer.Service {
 
         const event: Partial<Event> = {
           name: `${entry.dok_statusas} ${
-            entry.dokumento_kategorija.charAt(0).toLowerCase() +
-            entry.dokumento_kategorija.slice(1)
+            entry.dokumento_kategorija.charAt(0).toLowerCase() + entry.dokumento_kategorija.slice(1)
           }`,
           body: entry.iraso_paaiskinimas,
           startAt: new Date(entry.iraso_data),
           geom,
+          app: app.id,
           isFullDay: true,
           externalId: entry._id,
         };
@@ -160,12 +142,13 @@ export default class DatagovService extends moleculer.Service {
           stats.valid.inserted++;
           await ctx.call('events.create', event);
         }
+
+        if (limit && stats.valid.total >= limit) {
+          return stats;
+        }
       }
     } while (response?._data?.length);
 
     return stats;
   }
-
-  @Method
-  async getEventName() {}
 }
