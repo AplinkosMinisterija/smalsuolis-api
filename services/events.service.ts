@@ -14,7 +14,6 @@ import {
   EndpointType,
   UserAuthMeta,
 } from '../types';
-import { getEventIdsByUserInfo } from '../utils/queries';
 
 export interface Event extends BaseModelInterface {
   id: number;
@@ -94,13 +93,19 @@ export interface Event extends BaseModelInterface {
 
         if (!user?.id || (isEmpty(user.geom) && isEmpty(user.apps))) return query;
 
-        const eventIds: { id: number }[] = await getEventIdsByUserInfo(user);
+        if (!isEmpty(user.geom)) {
+          query.geom = user.geom;
+        }
 
-        return { ...query, id: { $in: eventIds.map((i) => i.id) } };
+        if (!isEmpty(user.apps)) {
+          query.app = { $in: user.apps };
+        }
+
+        return query;
       },
     },
 
-    defaultScopes: [...COMMON_DEFAULT_SCOPES, 'visibleToUser'],
+    defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
 
   actions: {
