@@ -63,7 +63,7 @@ export default class SeedService extends moleculer.Service {
     });
 
     if (!count) {
-      ctx.call('datagov.infostatyba', { limit: process.env.NODE_ENV === 'local' ? 100 : 0 });
+      await ctx.call('datagov.infostatyba', { limit: 100 });
     }
   }
 
