@@ -238,10 +238,9 @@ export default class UsersService extends moleculer.Service {
       return inviteData;
     }
 
-    let authUser: any;
     const inviteData = getInviteData(ctx.params);
 
-    authUser = await ctx.call('auth.users.create', inviteData);
+    const authUser: any = await ctx.call('auth.users.create', inviteData);
 
     const user: User = await ctx.call('users.findOrCreate', {
       authUser,
