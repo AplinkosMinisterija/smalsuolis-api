@@ -9,7 +9,6 @@ export enum EndpointType {
   ADMIN = 'ADMIN',
   USER = 'USER',
   SELF = 'SELF',
-  APP = 'APP',
 }
 
 export interface UserAuthMeta {
