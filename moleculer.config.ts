@@ -1,13 +1,6 @@
 'use strict';
-import {
-  BrokerOptions,
-  Errors,
-  MetricRegistry,
-  ServiceBroker,
-} from 'moleculer';
+import { BrokerOptions, Errors, MetricRegistry, ServiceBroker } from 'moleculer';
 
-import { knex } from 'knex';
-import config from './knexfile';
 /**
  * Moleculer ServiceBroker configuration file
  *
@@ -243,7 +236,6 @@ const brokerConfig: BrokerOptions = {
 
   async started(broker: ServiceBroker): Promise<void> {
     try {
-      await knex(config).migrate.latest();
       broker.waitForServices(['seed']).then(async () => {
         await broker.call('seed.run');
       });
