@@ -9,11 +9,22 @@ import {
   COMMON_FIELDS,
   COMMON_SCOPES,
   Frequency,
+  TemplateModel,
 } from '../types';
 import { User } from './users.service';
 import { Event } from './events.service';
+import moment from 'moment';
+import { ServerClient } from 'postmark';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
+
+export function emailCanBeSent() {
+  return ['production', 'staging'].includes(process.env.NODE_ENV);
+}
+
+const sender = 'noreply@biip.lt';
+
+const client = new ServerClient(process.env.POSTMARK_KEY);
 
 function getAppsFromEvents(events: Event[]): number[] {
   return events.reduce((accumulator, value) => {
@@ -60,7 +71,7 @@ export interface Subscription extends BaseModelInterface {
         //apps subscribed to
         type: 'array',
         items: { type: 'number' },
-        columnName: 'appsIds',
+        columnName: 'apps',
         populate(ctx: any, _values: any, items: Subscription[]) {
           return Promise.all(
             items.map((item: any) => {
@@ -78,7 +89,6 @@ export interface Subscription extends BaseModelInterface {
         values: Object.values(Frequency),
       },
       active: 'boolean', // is subscription active
-      lastSent: { date: 'date', columnType: 'datetime' }, // last time email was sent
       ...COMMON_FIELDS,
     },
     scopes: {
@@ -96,10 +106,26 @@ export interface Subscription extends BaseModelInterface {
   },
   crons: [
     {
-      name: 'sendEmails',
-      cronTime: '* * * * *',
+      name: 'dailyEmails',
+      cronTime: '0 8 * * *',
       async onTick() {
-        this.call('subscriptions.sendEmails');
+        this.call('subscriptions.handleDailyEmails');
+      },
+      timeZone: 'Europe/Vilnius',
+    },
+    {
+      name: 'weeklyEmails',
+      cronTime: '0 9 * * 1',
+      async onTick() {
+        this.call('subscriptions.handleWeeklyEmails');
+      },
+      timeZone: 'Europe/Vilnius',
+    },
+    {
+      name: 'monthlyEmails',
+      cronTime: '0 10 1 * *',
+      async onTick() {
+        this.call('subscriptions.handleMonthlyEmails');
       },
       timeZone: 'Europe/Vilnius',
     },
@@ -107,47 +133,69 @@ export interface Subscription extends BaseModelInterface {
 })
 export default class SubscriptionsService extends moleculer.Service {
   @Action()
-  async sendEmails(ctx: Context) {
-    console.log('sendEmails!!!');
-    // Get events within a mont
+  async handleDailyEmails(ctx: Context) {
     const currentDate = new Date();
-    const monthsAgo = new Date(currentDate.setDate(currentDate.getDate() - 30));
-    const monthlyEvents: Event[] = await ctx.call('events.find', {
-      query: {
-        startAt: { $gt: monthsAgo },
-      },
-    });
-    await this.handleEmails(monthlyEvents, monthsAgo);
-    const weekAgo = new Date(currentDate.setDate(currentDate.getDate() - 7));
-    const weekEvents: Event[] = filterEvents(monthlyEvents, weekAgo);
-    await this.handleEmails(weekEvents, weekAgo);
     const dayAgo = new Date(currentDate.setDate(currentDate.getDate() - 1));
-    const dayEvents = filterEvents(weekEvents, dayAgo);
-    await this.handleEmails(dayEvents, dayAgo);
+    await this.handleEmails(dayAgo, Frequency.DAY);
+  }
+
+  @Action()
+  async handleWeeklyEmails(ctx: Context) {
+    const currentDate = new Date();
+    const weekAgo = new Date(currentDate.setDate(currentDate.getDate() - 7));
+    await this.handleEmails(weekAgo, Frequency.WEEK);
+  }
+
+  @Action()
+  async handleMonthlyEmails(ctx: Context) {}
+
+  @Method
+  async handleEmails(date: Date, frequency: Frequency) {
+    const subscriptions = await this.findEntities(null, {
+      query: {
+        frequency,
+        active: true,
+      },
+      populate: 'user',
+    });
+
+    if (!subscriptions.length) {
+      return;
+    }
+    //TODO: type needs to be fixed in events.service first
+    const events: any[] = await this.broker.call('events.find', {
+      query: {
+        startAt: { $gt: date },
+      },
+      populate: 'app',
+      sort: '-startAt',
+    });
+    for (const sub of subscriptions) {
+      const subEvents = events
+        .filter((e) => sub.apps.includes(e.app.id))
+        .map((e) => ({
+          app_name: e.app.name,
+          event_name: e.name,
+          date: moment(e.startAt).locale('lt').format('YYYY [m.] MMMM DD [d.]'),
+          event_content: e.body,
+        }));
+
+      await this.sendEmail(sub.user.email, {
+        name: sub.user.name,
+        events: subEvents,
+      });
+    }
   }
 
   @Method
-  async handleEmails(events: Event[], date: Date) {
-    console.log('sendEmails111');
-
-    // if (events.length) {
-    //   const apps = getAppsFromEvents(events);
-    const apps = [1, 5];
-    const subscriptions = await this.findEntities(null, {
-      query: {
-        lastSent: { $lte: date },
-        active: true,
-        apps: {
-          $contains: {
-            $or: apps.map((value) => ({ $in: { items: [value] } })),
-          },
-        },
-      },
-    });
-    console.log('subsqqq', subscriptions);
-    // get subscribers who need monthly update for app events
-    // send emails
-    // update lastSent
-    // }
+  async sendEmail(email: string, data: TemplateModel) {
+    if (!emailCanBeSent()) return;
+    const content = {
+      From: sender,
+      To: email,
+      TemplateId: 34626749,
+      TemplateModel: data,
+    };
+    return client.sendEmailWithTemplate(content);
   }
 }

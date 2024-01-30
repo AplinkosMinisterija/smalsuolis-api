@@ -131,3 +131,13 @@ export enum Frequency {
   WEEK = 'WEEK',
   MONTH = 'MONTH',
 }
+
+export interface TemplateModel {
+  name: string;
+  events: {
+    app_name: string;
+    event_name: string;
+    date: string;
+    event_content: string;
+  }[];
+}
