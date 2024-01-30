@@ -12,9 +12,9 @@ import {
   TemplateModel,
 } from '../types';
 import { User } from './users.service';
-import { Event } from './events.service';
-import moment from 'moment';
 import { ServerClient } from 'postmark';
+import { lt } from 'date-fns/locale';
+import { format } from 'date-fns/format';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
@@ -25,20 +25,6 @@ export function emailCanBeSent() {
 const sender = 'noreply@biip.lt';
 
 const client = new ServerClient(process.env.POSTMARK_KEY);
-
-function getAppsFromEvents(events: Event[]): number[] {
-  return events.reduce((accumulator, value) => {
-    const app = value.app;
-    if (!accumulator.includes(app)) {
-      return [...accumulator, app];
-    }
-    return accumulator;
-  }, []);
-}
-
-function filterEvents(events: Event[], date: Date) {
-  return events.filter((e) => e.startAt > date);
-}
 
 export interface Subscription extends BaseModelInterface {
   id: number;
@@ -63,6 +49,7 @@ export interface Subscription extends BaseModelInterface {
       user: {
         //subscriber
         type: 'number',
+        required: true,
         columnType: 'integer',
         columnName: 'userId',
         populate: 'users.get',
@@ -70,16 +57,16 @@ export interface Subscription extends BaseModelInterface {
       apps: {
         //apps subscribed to
         type: 'array',
+        required: true,
         items: { type: 'number' },
         columnName: 'apps',
         populate(ctx: any, _values: any, items: Subscription[]) {
           return Promise.all(
             items.map((item: any) => {
               if (!item.appsIds) return [];
-              if (typeof item.appsIds === 'string')
-                item.appsIds = JSON.parse(item.appsIds);
+              if (typeof item.appsIds === 'string') item.appsIds = JSON.parse(item.appsIds);
               return ctx.call('apps.resolve', { id: item.appsIds });
-            })
+            }),
           );
         },
       },
@@ -107,50 +94,36 @@ export interface Subscription extends BaseModelInterface {
   crons: [
     {
       name: 'dailyEmails',
-      cronTime: '0 8 * * *',
+      cronTime: '0 12 * * *',
       async onTick() {
-        this.call('subscriptions.handleDailyEmails');
+        const currentDate = new Date();
+        const dayAgo = new Date(currentDate.setDate(currentDate.getDate() - 1));
+        await this.call('subscriptions.handleEmails', { date: dayAgo, frequency: Frequency.DAY });
       },
       timeZone: 'Europe/Vilnius',
     },
     {
       name: 'weeklyEmails',
-      cronTime: '0 9 * * 1',
+      cronTime: '0 13 * * 1',
       async onTick() {
-        this.call('subscriptions.handleWeeklyEmails');
+        const currentDate = new Date();
+        const weekAgo = new Date(currentDate.setDate(currentDate.getDate() - 7));
+        await this.call('subscriptions.handleEmails', { date: weekAgo, frequency: Frequency.WEEK });
       },
       timeZone: 'Europe/Vilnius',
     },
     {
       name: 'monthlyEmails',
-      cronTime: '0 10 1 * *',
-      async onTick() {
-        this.call('subscriptions.handleMonthlyEmails');
-      },
+      cronTime: '0 15 1 * *',
+      async onTick() {},
       timeZone: 'Europe/Vilnius',
     },
   ],
 })
 export default class SubscriptionsService extends moleculer.Service {
   @Action()
-  async handleDailyEmails(ctx: Context) {
-    const currentDate = new Date();
-    const dayAgo = new Date(currentDate.setDate(currentDate.getDate() - 1));
-    await this.handleEmails(dayAgo, Frequency.DAY);
-  }
-
-  @Action()
-  async handleWeeklyEmails(ctx: Context) {
-    const currentDate = new Date();
-    const weekAgo = new Date(currentDate.setDate(currentDate.getDate() - 7));
-    await this.handleEmails(weekAgo, Frequency.WEEK);
-  }
-
-  @Action()
-  async handleMonthlyEmails(ctx: Context) {}
-
-  @Method
-  async handleEmails(date: Date, frequency: Frequency) {
+  async handleEmails(ctx: Context<{ date: Date; frequency: Frequency }>) {
+    const { date, frequency } = ctx.params;
     const subscriptions = await this.findEntities(null, {
       query: {
         frequency,
@@ -168,7 +141,6 @@ export default class SubscriptionsService extends moleculer.Service {
         startAt: { $gt: date },
       },
       populate: 'app',
-      sort: '-startAt',
     });
     for (const sub of subscriptions) {
       const subEvents = events
@@ -176,26 +148,23 @@ export default class SubscriptionsService extends moleculer.Service {
         .map((e) => ({
           app_name: e.app.name,
           event_name: e.name,
-          date: moment(e.startAt).locale('lt').format('YYYY [m.] MMMM DD [d.]'),
+          date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
+            locale: lt,
+          }),
           event_content: e.body,
         }));
 
-      await this.sendEmail(sub.user.email, {
-        name: sub.user.name,
-        events: subEvents,
-      });
+      if (!emailCanBeSent()) return;
+      const content = {
+        From: sender,
+        To: sub.user.email,
+        TemplateId: 34626749,
+        TemplateModel: {
+          name: `${sub.user.firstName} ${sub.user.lastName}`,
+          events: subEvents,
+        },
+      };
+      await client.sendEmailWithTemplate(content);
     }
-  }
-
-  @Method
-  async sendEmail(email: string, data: TemplateModel) {
-    if (!emailCanBeSent()) return;
-    const content = {
-      From: sender,
-      To: email,
-      TemplateId: 34626749,
-      TemplateModel: data,
-    };
-    return client.sendEmailWithTemplate(content);
   }
 }
