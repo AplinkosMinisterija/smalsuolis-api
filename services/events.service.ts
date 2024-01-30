@@ -92,15 +92,6 @@ export interface Event extends BaseModelInterface {
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
-    create: {
-      auth: EndpointType.APP,
-    },
-    update: {
-      auth: EndpointType.APP,
-    },
-    remove: {
-      auth: EndpointType.APP,
-    },
     list: {
       auth: EndpointType.PUBLIC,
     },

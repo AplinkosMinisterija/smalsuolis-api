@@ -9,34 +9,24 @@ export enum EndpointType {
   ADMIN = 'ADMIN',
   USER = 'USER',
   SELF = 'SELF',
-  APP = 'APP',
 }
 
 export interface UserAuthMeta {
   user: User;
   authToken: string;
   authUser: any;
+  app: any;
 }
 export interface AppAuthMeta {
   app: App;
 }
 
-export function throwUnauthorizedError(
-  message?: string
-): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(
-    message || `Unauthorized.`,
-    401,
-    'UNAUTHORIZED'
-  );
+export function throwUnauthorizedError(message?: string): Errors.MoleculerError {
+  throw new Moleculer.Errors.MoleculerClientError(message || `Unauthorized.`, 401, 'UNAUTHORIZED');
 }
 
 export function throwNotFoundError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(
-    message || `Not found.`,
-    404,
-    'NOT_FOUND'
-  );
+  throw new Moleculer.Errors.MoleculerClientError(message || `Not found.`, 404, 'NOT_FOUND');
 }
 
 export function queryBoolean(field: string, value: boolean = false) {
