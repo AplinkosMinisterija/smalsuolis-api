@@ -174,6 +174,7 @@ export default class UsersService extends moleculer.Service {
         firstName,
         lastName,
         phone,
+        unassignExistingGroups: true,
         password,
         oldPassword,
       });
