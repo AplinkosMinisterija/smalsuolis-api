@@ -213,7 +213,7 @@ export default class UsersService extends moleculer.Service {
     >,
   ) {
     const { throwErrors } = ctx.params;
-    const authGroupId: number = Number(process.env.AUTH_GPOUP_ID);
+    const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
 
     function getInviteData(data: {
       firstName: string;
