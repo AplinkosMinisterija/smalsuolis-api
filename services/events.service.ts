@@ -13,25 +13,19 @@ import {
   BaseModelInterface,
   EndpointType,
 } from '../types';
-import { App } from './apps.service';
-
-import {
-  geometryFilterFn,
-  geometryFromText,
-  geometryToGeom,
-  GeomFeatureCollection,
-} from '../modules/geometry';
 
 export interface Event extends BaseModelInterface {
+  id: number;
+  app: number;
   name: string;
-  app: App['id'];
   type: string;
   geom: any;
   url: string;
   body: string;
   startAt: Date;
-  endAt: Date;
+  endAt?: Date;
   isFullDay: boolean;
+  externalId: string;
 }
 
 @Service({
@@ -53,7 +47,9 @@ export interface Event extends BaseModelInterface {
         secure: true,
       },
 
+      externalId: 'string',
       name: 'string|required',
+
       geom: {
         type: 'any',
         geom: true,
@@ -64,7 +60,6 @@ export interface Event extends BaseModelInterface {
         columnType: 'integer',
         hidden: 'byDefault',
         columnName: 'appId',
-        onCreate: ({ ctx }: FieldHookCallback) => ctx.meta.app?.id,
       },
 
       url: 'string',
@@ -78,7 +73,7 @@ export interface Event extends BaseModelInterface {
 
       endAt: {
         type: 'date',
-        required: true,
+        required: false,
         columnType: 'datetime',
       },
 

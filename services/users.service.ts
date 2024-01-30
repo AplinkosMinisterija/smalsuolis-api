@@ -27,19 +27,13 @@ export interface User extends BaseModelInterface {
   phone: string;
   type: UserType;
   authUser: number;
-  isExpert: boolean;
-  expertSpecies: number[];
   isServer?: boolean;
 }
 
 const VISIBLE_TO_USER_SCOPE = 'tenant';
 const NOT_ADMINS_SCOPE = 'notAdmins';
 
-const AUTH_PROTECTED_SCOPES = [
-  ...COMMON_DEFAULT_SCOPES,
-  VISIBLE_TO_USER_SCOPE,
-  NOT_ADMINS_SCOPE,
-];
+const AUTH_PROTECTED_SCOPES = [...COMMON_DEFAULT_SCOPES, VISIBLE_TO_USER_SCOPE, NOT_ADMINS_SCOPE];
 
 export const USERS_WITHOUT_AUTH_SCOPES = [`-${VISIBLE_TO_USER_SCOPE}`];
 const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
@@ -93,11 +87,7 @@ export const USERS_DEFAULT_SCOPES = [
         columnName: 'authUserId',
         populate: 'auth.users.get',
         async onRemove({ ctx, entity }: FieldHookCallback) {
-          await ctx.call(
-            'auth.users.remove',
-            { id: entity.authUserId },
-            { meta: ctx?.meta }
-          );
+          await ctx.call('auth.users.remove', { id: entity.authUserId }, { meta: ctx?.meta });
         },
       },
 
@@ -164,7 +154,7 @@ export default class UsersService extends moleculer.Service {
         email: string;
       },
       UserAuthMeta
-    >
+    >,
   ) {
     const { personalCode, email } = ctx.params;
     const data: any = {
@@ -250,16 +240,14 @@ export default class UsersService extends moleculer.Service {
       email?: string;
       phone?: string;
       update?: boolean;
-    }>
+    }>,
   ) {
     const { authUser, update, firstName, lastName, email, phone } = ctx.params;
     if (!authUser || !authUser.id) return;
 
     const scope = [...USERS_WITHOUT_AUTH_SCOPES];
 
-    const authUserIsAdmin = ['SUPER_ADMIN', UserType.ADMIN].includes(
-      authUser.type
-    );
+    const authUserIsAdmin = ['SUPER_ADMIN', UserType.ADMIN].includes(authUser.type);
 
     if (authUserIsAdmin) {
       scope.push(...USERS_WITHOUT_NOT_ADMINS_SCOPE);
@@ -356,7 +344,7 @@ export default class UsersService extends moleculer.Service {
         phone: string;
       },
       UserAuthMeta
-    >
+    >,
   ) {
     const { id, email, phone } = ctx.params;
 
