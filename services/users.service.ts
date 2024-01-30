@@ -140,8 +140,8 @@ export default class UsersService extends moleculer.Service {
     rest: 'PATCH /me',
     auth: EndpointType.USER,
     params: {
-      firstName: 'string',
-      lastName: 'string',
+      firstName: 'string|optional',
+      lastName: 'string|optional',
       phone: 'string|optional',
       password: 'string|optional',
       oldPassword: 'string|optional',
