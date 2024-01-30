@@ -1,6 +1,6 @@
 'use strict';
 
-import moleculer, { Context } from 'moleculer';
+import moleculer, { Context, RestSchema } from 'moleculer';
 import { Action, Event, Method, Service } from 'moleculer-decorators';
 
 import authMixin from 'biip-auth-nodejs/mixin';
@@ -26,6 +26,22 @@ import { EndpointType, throwNotFoundError, UserAuthMeta } from '../types';
         keys: [],
       },
     },
+    login: {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /login',
+    },
+    'evartai.sign': {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /evartai/sign',
+    },
+    'evartai.login': {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /evartai/login',
+    },
+    refreshToken: {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /refresh',
+    },
   },
   hooks: {
     after: {
@@ -42,6 +58,11 @@ export default class AuthService extends moleculer.Service {
     cache: {
       keys: ['#user.id'],
     },
+    rest: <RestSchema>{
+      method: 'GET',
+      basePath: '/users',
+      path: '/me',
+    },
   })
   async me(ctx: Context<{}, UserAuthMeta>) {
     const { user, authUser } = ctx.meta;
@@ -54,20 +75,10 @@ export default class AuthService extends moleculer.Service {
       type: user.type,
     };
 
-    if (user.isExpert) {
-      data.isExpert = user.isExpert;
-    }
-
-    if (authUser?.permissions?.SPECIES) {
+    if (authUser?.permissions?.SMALSUOLIS) {
       data.permissions = {
-        SPECIES: authUser.permissions.SPECIES,
+        SMALSUOLIS: authUser.permissions.SMALSUOLIS,
       };
-    }
-
-    if (user.isExpert || user.type === UserType.ADMIN) {
-      data.tasks = await ctx.call('users.getTasksCounts', {
-        userId: user.id,
-      });
     }
 
     return data;
@@ -75,7 +86,7 @@ export default class AuthService extends moleculer.Service {
 
   @Action({
     cache: {
-      keys: ['types', '#user.id', '#profile.id'],
+      keys: ['types', '#user.id'],
     },
     params: {
       types: {
@@ -109,11 +120,7 @@ export default class AuthService extends moleculer.Service {
 
     const meta = { authToken: data.token };
 
-    const authUser: any = await this.broker.call(
-      'auth.users.resolveToken',
-      null,
-      { meta }
-    );
+    const authUser: any = await this.broker.call('auth.users.resolveToken', null, { meta });
 
     const user: User = await ctx.call('users.findOrCreate', {
       authUser: authUser,

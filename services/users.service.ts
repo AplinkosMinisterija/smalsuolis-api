@@ -28,8 +28,6 @@ export interface User extends BaseModelInterface {
   phone: string;
   type: UserType;
   authUser: number;
-  isExpert: boolean;
-  expertSpecies: number[];
   isServer?: boolean;
   geom?: any;
   apps?: App[];
