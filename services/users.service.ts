@@ -150,8 +150,8 @@ export default class UsersService extends moleculer.Service {
   async patchMe(
     ctx: Context<
       {
-        firstName: string;
-        lastName: string;
+        firstName?: string;
+        lastName?: string;
         phone?: string;
         password?: string;
         oldPassword?: string;
@@ -164,23 +164,25 @@ export default class UsersService extends moleculer.Service {
     if (password && oldPassword) {
       await ctx.call('auth.users.update', {
         id: ctx.meta.user.authUser,
-        firstName,
-        lastName,
-        phone,
+        firstName: firstName || ctx.meta.user.firstName,
+        lastName: lastName || ctx.meta.user.lastName,
+        phone: phone || ctx.meta.user.phone,
         unassignExistingGroups: true,
         password,
         oldPassword,
       });
     }
 
-    const user = await ctx.call('users.update', {
-      id: ctx.meta.user.id,
-      firstName,
-      lastName,
-      phone,
-    });
+    if (firstName || lastName || phone) {
+      return ctx.call('users.update', {
+        id: ctx.meta.user.id,
+        firstName,
+        lastName,
+        phone,
+      });
+    }
 
-    return user;
+    return ctx.meta.user;
   }
 
   @Action({
