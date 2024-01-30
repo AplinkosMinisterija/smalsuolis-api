@@ -67,7 +67,7 @@ const brokerConfig: BrokerOptions = {
     type: 'Redis',
     options: {
       redis: process.env.REDIS_CONNECTION,
-      prefix: 'rusys',
+      prefix: 'smalsuolis',
       ttl: 60 * 60, // 1 hour
     },
   },
