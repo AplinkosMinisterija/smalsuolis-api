@@ -163,7 +163,7 @@ export default class UsersService extends moleculer.Service {
 
     if (password && oldPassword) {
       await ctx.call('auth.users.update', {
-        id: ctx.meta.user.authUser,
+        id: ctx.meta.authUser.id,
         firstName: firstName || ctx.meta.user.firstName,
         lastName: lastName || ctx.meta.user.lastName,
         phone: phone || ctx.meta.user.phone,
