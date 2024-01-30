@@ -161,13 +161,6 @@ export default class UsersService extends moleculer.Service {
   ) {
     const { firstName, lastName, phone, password, oldPassword } = ctx.params;
 
-    const user = await ctx.call('users.update', {
-      id: ctx.meta.user.id,
-      firstName,
-      lastName,
-      phone,
-    });
-
     if (password && oldPassword) {
       await ctx.call('auth.users.update', {
         id: ctx.meta.user.authUser,
@@ -179,6 +172,13 @@ export default class UsersService extends moleculer.Service {
         oldPassword,
       });
     }
+
+    const user = await ctx.call('users.update', {
+      id: ctx.meta.user.id,
+      firstName,
+      lastName,
+      phone,
+    });
 
     return user;
   }
