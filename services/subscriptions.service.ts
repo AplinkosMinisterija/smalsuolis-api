@@ -188,7 +188,7 @@ export default class SubscriptionsService extends moleculer.Service {
   }
 
   created() {
-    if (['production', 'staging'].includes(process.env.NODE_ENV)) {
+    if (emailCanBeSent()) {
       if (!process.env.POSTMARK_KEY) {
         this.broker.fatal('POSTMARK is not configured');
       }
