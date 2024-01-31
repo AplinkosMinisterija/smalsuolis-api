@@ -137,7 +137,7 @@ export default class SubscriptionsService extends moleculer.Service {
     if (!emailCanBeSent()) return;
     const frequency = ctx.params.frequency;
     const date = getDateByFrequency(frequency);
-    const subscriptions = await this.findEntities(null, {
+    const subscriptions = await this.findEntities(ctx, {
       query: {
         frequency,
         active: true,
