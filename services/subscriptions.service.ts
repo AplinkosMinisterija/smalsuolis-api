@@ -72,10 +72,10 @@ export type Subscription<
         columnName: 'apps',
         populate(ctx: any, _values: any, items: Subscription[]) {
           return Promise.all(
-            items.map((item: any) => {
-              if (!item.appsIds) return [];
-              if (typeof item.appsIds === 'string') item.appsIds = JSON.parse(item.appsIds);
-              return ctx.call('apps.resolve', { id: item.appsIds });
+            items.map((item: Subscription) => {
+              if (!item.apps) return [];
+              if (typeof item.apps === 'string') item.apps = JSON.parse(item.apps);
+              return ctx.call('apps.resolve', { id: item.apps });
             }),
           );
         },
