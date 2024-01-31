@@ -21,22 +21,12 @@ export interface AppAuthMeta {
   app: App;
 }
 
-export function throwUnauthorizedError(
-  message?: string
-): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(
-    message || `Unauthorized.`,
-    401,
-    'UNAUTHORIZED'
-  );
+export function throwUnauthorizedError(message?: string): Errors.MoleculerError {
+  throw new Moleculer.Errors.MoleculerClientError(message || `Unauthorized.`, 401, 'UNAUTHORIZED');
 }
 
 export function throwNotFoundError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(
-    message || `Not found.`,
-    404,
-    'NOT_FOUND'
-  );
+  throw new Moleculer.Errors.MoleculerClientError(message || `Not found.`, 404, 'NOT_FOUND');
 }
 
 export function queryBoolean(field: string, value: boolean = false) {
@@ -45,6 +35,29 @@ export function queryBoolean(field: string, value: boolean = false) {
     fieldValue += ' NOT';
   }
   return { $raw: `${fieldValue} TRUE` };
+}
+
+export type Table<
+  Fields = {},
+  Populates = {},
+  P extends keyof Populates = never,
+  F extends keyof (Fields & Populates) = keyof Fields,
+> = Pick<Omit<Fields, P> & Pick<Populates, P>, Extract<P | Exclude<keyof Fields, P>, F>>;
+
+export interface CommonFields {
+  id: number;
+  createdBy: User['id'];
+  createdAt: Date;
+  updatedBy: User['id'];
+  updatedAt: Date;
+  deletedBy: User['id'];
+  detetedAt: Date;
+}
+
+export interface CommonPopulates {
+  createdBy: User;
+  updatedBy: User;
+  deletedBy: User;
 }
 
 export const COMMON_FIELDS = {
@@ -132,12 +145,8 @@ export enum Frequency {
   MONTH = 'MONTH',
 }
 
-export interface TemplateModel {
-  name: string;
-  events: {
-    app_name: string;
-    event_name: string;
-    date: string;
-    event_content: string;
-  }[];
-}
+export const FrequencyLabel = {
+  [Frequency.DAY]: 'Vakar',
+  [Frequency.WEEK]: 'Prėjusią savaitę',
+  [Frequency.MONTH]: 'Praėjusį mėnesį',
+};

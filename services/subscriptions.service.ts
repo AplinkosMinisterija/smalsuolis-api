@@ -1,39 +1,49 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
+import { Action, Service } from 'moleculer-decorators';
 import DbConnection from '../mixins/database.mixin';
 import {
-  BaseModelInterface,
   COMMON_DEFAULT_SCOPES,
   COMMON_FIELDS,
   COMMON_SCOPES,
+  CommonFields,
+  CommonPopulates,
   Frequency,
-  TemplateModel,
+  FrequencyLabel,
+  Table,
 } from '../types';
 import { User } from './users.service';
+import { Event } from './events.service';
 import { ServerClient } from 'postmark';
 import { lt } from 'date-fns/locale';
 import { format } from 'date-fns/format';
+import { App } from './apps.service';
+import { emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
-
-export function emailCanBeSent() {
-  return ['production', 'staging'].includes(process.env.NODE_ENV);
-}
 
 const sender = 'noreply@biip.lt';
 
 const client = new ServerClient(process.env.POSTMARK_KEY);
 
-export interface Subscription extends BaseModelInterface {
-  id: number;
+interface Fields extends CommonFields {
   user: User['id'];
   apps: number[];
   frequency: Frequency;
   active: boolean;
   lastSent: Date;
 }
+
+interface Populates extends CommonPopulates {
+  apps: App[];
+  user: User;
+}
+
+export type Subscription<
+  P extends keyof Populates = never,
+  F extends keyof (Fields & Populates) = keyof Fields,
+> = Table<Fields, Populates, P, F>;
 
 @Service({
   name: 'subscriptions',
@@ -96,9 +106,7 @@ export interface Subscription extends BaseModelInterface {
       name: 'dailyEmails',
       cronTime: '0 12 * * *',
       async onTick() {
-        const currentDate = new Date();
-        const dayAgo = new Date(currentDate.setDate(currentDate.getDate() - 1));
-        await this.call('subscriptions.handleEmails', { date: dayAgo, frequency: Frequency.DAY });
+        await this.call('subscriptions.handleEmails', { frequency: Frequency.DAY });
       },
       timeZone: 'Europe/Vilnius',
     },
@@ -106,24 +114,25 @@ export interface Subscription extends BaseModelInterface {
       name: 'weeklyEmails',
       cronTime: '0 13 * * 1',
       async onTick() {
-        const currentDate = new Date();
-        const weekAgo = new Date(currentDate.setDate(currentDate.getDate() - 7));
-        await this.call('subscriptions.handleEmails', { date: weekAgo, frequency: Frequency.WEEK });
+        await this.call('subscriptions.handleEmails', { frequency: Frequency.WEEK });
       },
       timeZone: 'Europe/Vilnius',
     },
     {
       name: 'monthlyEmails',
       cronTime: '0 15 1 * *',
-      async onTick() {},
+      async onTick() {
+        await this.call('subscriptions.handleEmails', { frequency: Frequency.MONTH });
+      },
       timeZone: 'Europe/Vilnius',
     },
   ],
 })
 export default class SubscriptionsService extends moleculer.Service {
   @Action()
-  async handleEmails(ctx: Context<{ date: Date; frequency: Frequency }>) {
-    const { date, frequency } = ctx.params;
+  async handleEmails(ctx: Context<{ frequency: Frequency }>) {
+    const frequency = ctx.params.frequency;
+    const date = getDateByFrequency(frequency);
     const subscriptions = await this.findEntities(null, {
       query: {
         frequency,
@@ -135,36 +144,42 @@ export default class SubscriptionsService extends moleculer.Service {
     if (!subscriptions.length) {
       return;
     }
-    //TODO: type needs to be fixed in events.service first
-    const events: any[] = await this.broker.call('events.find', {
+
+    const events: Event<'app'>[] = await this.broker.call('events.find', {
       query: {
         startAt: { $gt: date },
       },
+      fields: ['id', 'app', 'name', 'body', 'startAt'],
       populate: 'app',
+      sort: '-startAt',
     });
-    for (const sub of subscriptions) {
-      const subEvents = events
-        .filter((e) => sub.apps.includes(e.app.id))
-        .map((e) => ({
-          app_name: e.app.name,
-          event_name: e.name,
-          date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
-            locale: lt,
-          }),
-          event_content: e.body,
-        }));
 
-      if (!emailCanBeSent()) return;
+    for (const sub of subscriptions) {
+      const filtered = events.filter((e) => sub.apps.includes(e.app.id));
+      const mappedEvents = filtered.slice(0, 6).map((e) => ({
+        app_name: e.app.name,
+        event_name: e.name,
+        date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
+          locale: lt,
+        }),
+        event_content: truncateString(e.body, 500),
+        url: e.url,
+      }));
+      if (!mappedEvents.length || !emailCanBeSent()) return;
+
       const content = {
         From: sender,
         To: sub.user.email,
         TemplateId: 34626749,
         TemplateModel: {
-          name: `${sub.user.firstName} ${sub.user.lastName}`,
-          events: subEvents,
+          frequency: FrequencyLabel[frequency],
+          total_events: filtered.length,
+          events: mappedEvents,
+          action_url: 'https://smalsuolis.lt', //TODO: replace with the actual link
         },
       };
       await client.sendEmailWithTemplate(content);
+      return;
     }
   }
 }
