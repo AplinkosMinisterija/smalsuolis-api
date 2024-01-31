@@ -75,31 +75,6 @@ import { User } from '@sentry/types';
         // Enable authorization. Implement the logic into `authorize` method. More info: https://moleculer.services/docs/0.14/moleculer-web.html#Authorization
         authorization: true,
 
-        onBeforeCall(
-          ctx: Context<Record<string, unknown>, AppAuthMeta>,
-          route: any,
-          req: RequestMessage
-        ): Promise<unknown> {
-          const header = req.headers['x-api-key'];
-          const actionAuth = req.$action.auth;
-
-          if (!!header) {
-            return this.verifyApiKey(ctx, header);
-          }
-
-          if (!actionAuth || ![EndpointType.APP].includes(actionAuth)) {
-            return Promise.resolve(ctx);
-          }
-
-          return this.rejectAuth(
-            ctx,
-            new ApiGateway.Errors.UnAuthorizedError(
-              ApiGateway.Errors.ERR_NO_TOKEN,
-              null
-            )
-          );
-        },
-
         // Calling options. More info: https://moleculer.services/docs/0.14/moleculer-web.html#Calling-options
         callingOptions: {},
 
@@ -148,7 +123,7 @@ export default class ApiService extends moleculer.Service {
   @Method
   async rejectAuth(
     ctx: Context<Record<string, unknown>>,
-    error: Errors.MoleculerError
+    error: Errors.MoleculerError,
   ): Promise<unknown> {
     const meta = ctx.meta as any;
     if (meta.app) {
@@ -165,7 +140,7 @@ export default class ApiService extends moleculer.Service {
         'caller',
         'params',
         'meta',
-        'locals'
+        'locals',
       );
       const action = pick(ctx.action, 'rawName', 'name', 'params', 'rest');
       const logInfo = {
@@ -183,50 +158,16 @@ export default class ApiService extends moleculer.Service {
   }
 
   @Method
-  async verifyApiKey(
-    ctx: Context<Record<string, unknown>, AppAuthMeta>,
-    apiKey: string
-  ): Promise<unknown> {
-    if (apiKey) {
-      try {
-        const app: App = await ctx.call('apps.verifyKey', { key: apiKey });
-        if (app && app.id) {
-          ctx.meta.app = app;
-          return Promise.resolve(ctx);
-        }
-      } catch (e) {
-        return this.rejectAuth(
-          ctx,
-          new ApiGateway.Errors.UnAuthorizedError(
-            ApiGateway.Errors.ERR_INVALID_TOKEN,
-            null
-          )
-        );
-      }
-    }
-
-    return this.rejectAuth(
-      ctx,
-      new ApiGateway.Errors.UnAuthorizedError(
-        ApiGateway.Errors.ERR_NO_TOKEN,
-        null
-      )
-    );
-  }
-
-  @Method
   async authenticate(
     ctx: Context<Record<string, unknown>, UserAuthMeta>,
-    route: any,
-    req: RequestMessage
+    _route: any,
+    req: RequestMessage,
   ): Promise<unknown> {
     const actionAuthType = req.$action.auth;
     const auth = req.headers.authorization;
+    ctx.meta.app = await ctx.call('auth.apps.resolveToken');
 
-    if (
-      [EndpointType.PUBLIC, EndpointType.APP].includes(actionAuthType) &&
-      !auth
-    ) {
+    if (actionAuthType === EndpointType.PUBLIC && !auth) {
       return Promise.resolve(null);
     }
 
@@ -239,17 +180,13 @@ export default class ApiService extends moleculer.Service {
 
       if (token) {
         try {
-          const authUser: any = await ctx.call(
-            'auth.users.resolveToken',
-            null,
-            { meta: { authToken: token } }
-          );
+          const authUser: any = await ctx.call('auth.users.resolveToken', null, {
+            meta: { authToken: token },
+          });
 
           const user: User = await ctx.call('users.resolveByAuthUser', {
             authUser: authUser,
           });
-
-          const app: any = await ctx.call('auth.apps.resolveToken');
 
           if (user && user.id) {
             ctx.meta.authUser = authUser;
@@ -257,23 +194,14 @@ export default class ApiService extends moleculer.Service {
             return Promise.resolve(user);
           }
         } catch (e) {
-          return this.rejectAuth(
-            ctx,
-            throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN)
-          );
+          return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
         }
       }
 
-      return this.rejectAuth(
-        ctx,
-        throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN)
-      );
+      return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
     }
 
-    return this.rejectAuth(
-      ctx,
-      throwUnauthorizedError(ApiGateway.Errors.ERR_NO_TOKEN)
-    );
+    return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_NO_TOKEN));
   }
   /**
    * Authorize the request.
@@ -287,46 +215,35 @@ export default class ApiService extends moleculer.Service {
   async authorize(
     ctx: Context<Record<string, unknown>, UserAuthMeta>,
     route: any,
-    req: RequestMessage
+    req: RequestMessage,
   ): Promise<unknown> {
     const user = ctx.meta.user;
 
     const auth = req.$action.auth;
-    if ([EndpointType.PUBLIC, EndpointType.APP].includes(auth)) {
+    if (auth === EndpointType.PUBLIC) {
       return Promise.resolve(null);
     }
 
     if (!user) {
       return this.rejectAuth(
         ctx,
-        new ApiGateway.Errors.UnAuthorizedError(
-          ApiGateway.Errors.ERR_NO_TOKEN,
-          null
-        )
+        new ApiGateway.Errors.UnAuthorizedError(ApiGateway.Errors.ERR_NO_TOKEN, null),
       );
     }
 
-    const aTypes = Array.isArray(req.$action.types)
-      ? req.$action.types
-      : [req.$action.types];
+    const aTypes = Array.isArray(req.$action.types) ? req.$action.types : [req.$action.types];
     const oTypes = Array.isArray(req.$route.opts.types)
       ? req.$route.opts.types
       : [req.$route.opts.types];
 
     const allTypes = [...aTypes, ...oTypes].filter(Boolean);
     const types = [...new Set(allTypes)];
-    const valid = await ctx.call<boolean, { types: UserType[] }>(
-      'auth.validateType',
-      { types }
-    );
+    const valid = await ctx.call<boolean, { types: UserType[] }>('auth.validateType', { types });
 
     if (!valid) {
       return this.rejectAuth(
         ctx,
-        new ApiGateway.Errors.UnAuthorizedError(
-          ApiGateway.Errors.ERR_INVALID_TOKEN,
-          null
-        )
+        new ApiGateway.Errors.UnAuthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN, null),
       );
     }
 

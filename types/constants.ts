@@ -9,13 +9,13 @@ export enum EndpointType {
   ADMIN = 'ADMIN',
   USER = 'USER',
   SELF = 'SELF',
-  APP = 'APP',
 }
 
 export interface UserAuthMeta {
   user: User;
   authToken: string;
   authUser: any;
+  app: any;
 }
 export interface AppAuthMeta {
   app: App;

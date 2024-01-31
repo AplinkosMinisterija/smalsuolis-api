@@ -137,39 +137,99 @@ export const USERS_DEFAULT_SCOPES = [
 })
 export default class UsersService extends moleculer.Service {
   @Action({
-    rest: 'POST /',
+    rest: 'PATCH /me',
+    auth: EndpointType.USER,
     params: {
-      personalCode: 'any',
+      firstName: 'string|optional',
+      lastName: 'string|optional',
+      phone: 'string|optional',
+      password: 'string|optional',
+      oldPassword: 'string|optional',
+    },
+  })
+  async patchMe(
+    ctx: Context<
+      {
+        firstName?: string;
+        lastName?: string;
+        phone?: string;
+        password?: string;
+        oldPassword?: string;
+      },
+      UserAuthMeta
+    >,
+  ) {
+    const { firstName, lastName, phone, password, oldPassword } = ctx.params;
+
+    if (password && oldPassword) {
+      await ctx.call('auth.users.update', {
+        id: ctx.meta.authUser.id,
+        firstName: firstName || ctx.meta.user.firstName,
+        lastName: lastName || ctx.meta.user.lastName,
+        phone: phone || ctx.meta.user.phone,
+        unassignExistingGroups: true,
+        password,
+        oldPassword,
+      });
+    }
+
+    if (firstName || lastName || phone) {
+      return ctx.call('users.update', {
+        id: ctx.meta.user.id,
+        firstName,
+        lastName,
+        phone,
+      });
+    }
+
+    return ctx.meta.user;
+  }
+
+  @Action({
+    rest: 'POST /',
+    auth: EndpointType.PUBLIC,
+    params: {
       firstName: 'string',
       lastName: 'string',
+      phone: 'string|optional',
       email: 'string',
-      phone: 'string',
     },
-    types: [EndpointType.ADMIN],
   })
   async invite(
     ctx: Context<
       {
-        personalCode: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
         email: string;
       },
       UserAuthMeta
     >,
   ) {
-    const { personalCode, email } = ctx.params;
-    const data: any = {
-      personalCode,
-      notify: [email],
+    const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
+
+    const inviteData = {
+      firstName: ctx.params.firstName,
+      lastName: ctx.params.lastName,
+      email: ctx.params.email,
+      phone: ctx.params.phone,
+      groups: [{ id: authGroupId, role: 'USER' }],
+      unassignExistingGroups: false,
     };
 
-    let authGroupId;
-
-    const authUser: any = await ctx.call('auth.users.invite', data);
+    const authUser: any = await ctx.call('auth.users.create', inviteData);
 
     const user: User = await ctx.call('users.findOrCreate', {
-      authUser: authUser,
-      ...ctx.params,
+      authUser,
+      firstName: ctx.params.firstName,
+      lastName: ctx.params.lastName,
+      email: ctx.params.email,
+      phone: ctx.params.phone,
     });
+
+    if (authUser?.url) {
+      return { ...user, url: authUser.url };
+    }
 
     return user;
   }
