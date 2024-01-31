@@ -1,5 +1,10 @@
+const {
+  query: oldEventsForPublishingQuery,
+} = require('./20240131131339_createEventsForPublishing');
+
 const eventsForPublishingQuery = `
 SELECT
+  e.id,
   e.name,
   e.body,
   e.url,
@@ -17,9 +22,9 @@ exports.query = eventsForPublishingQuery;
 
 exports.up = function (knex) {
   return knex.schema
-    .raw('CREATE SCHEMA IF NOT EXISTS publishing')
     .withSchema('publishing')
-    .createViewOrReplace('events', function (view) {
+    .dropView('events')
+    .createView('events', function (view) {
       view.as(knex.raw(eventsForPublishingQuery));
     });
 };
@@ -27,6 +32,8 @@ exports.up = function (knex) {
 exports.down = function (knex) {
   return knex.schema
     .withSchema('publishing')
-    .dropViewIfExists('events')
-    .raw('DROP SCHEMA IF EXISTS publishing');
+    .dropView('events')
+    .createView('events', function (view) {
+      view.as(knex.raw(oldEventsForPublishingQuery));
+    });
 };
