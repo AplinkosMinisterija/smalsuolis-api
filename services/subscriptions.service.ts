@@ -165,7 +165,7 @@ export default class SubscriptionsService extends moleculer.Service {
         event_content: truncateString(e.body, 500),
         url: e.url,
       }));
-      if (!mappedEvents.length || !emailCanBeSent()) return;
+      if (!filtered.length || !emailCanBeSent()) return;
 
       const content = {
         From: sender,
@@ -179,7 +179,6 @@ export default class SubscriptionsService extends moleculer.Service {
         },
       };
       await client.sendEmailWithTemplate(content);
-      return;
     }
   }
 }
