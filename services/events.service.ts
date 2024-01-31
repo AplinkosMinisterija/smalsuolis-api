@@ -1,21 +1,21 @@
 'use strict';
 
-import moleculer, { Context } from 'moleculer';
-import { Method, Service } from 'moleculer-decorators';
+import moleculer from 'moleculer';
+import { Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
-
 import DbConnection from '../mixins/database.mixin';
 import {
   COMMON_FIELDS,
   COMMON_DEFAULT_SCOPES,
   COMMON_SCOPES,
-  FieldHookCallback,
-  BaseModelInterface,
   EndpointType,
+  CommonPopulates,
+  Table,
+  CommonFields,
 } from '../types';
+import { App } from './apps.service';
 
-export interface Event extends BaseModelInterface {
-  id: number;
+interface Fields extends CommonFields {
   app: number;
   name: string;
   type: string;
@@ -27,6 +27,15 @@ export interface Event extends BaseModelInterface {
   isFullDay: boolean;
   externalId: string;
 }
+
+interface Populates extends CommonPopulates {
+  app: App;
+}
+
+export type Event<
+  P extends keyof Populates = never,
+  F extends keyof (Fields & Populates) = keyof Fields,
+> = Table<Fields, Populates, P, F>;
 
 @Service({
   name: 'events',
@@ -46,37 +55,31 @@ export interface Event extends BaseModelInterface {
         primaryKey: true,
         secure: true,
       },
-
       externalId: 'string',
       name: 'string|required',
-
       geom: {
         type: 'any',
         geom: true,
       },
-
       app: {
         type: 'number',
         columnType: 'integer',
         hidden: 'byDefault',
         columnName: 'appId',
+        populate: 'apps.get',
       },
-
       url: 'string',
       body: 'string',
-
       startAt: {
         type: 'date',
         required: true,
         columnType: 'datetime',
       },
-
       endAt: {
         type: 'date',
         required: false,
         columnType: 'datetime',
       },
-
       isFullDay: {
         type: 'boolean',
         default: false,

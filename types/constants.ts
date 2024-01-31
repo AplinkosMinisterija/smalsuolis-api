@@ -37,6 +37,29 @@ export function queryBoolean(field: string, value: boolean = false) {
   return { $raw: `${fieldValue} TRUE` };
 }
 
+export type Table<
+  Fields = {},
+  Populates = {},
+  P extends keyof Populates = never,
+  F extends keyof (Fields & Populates) = keyof Fields,
+> = Pick<Omit<Fields, P> & Pick<Populates, P>, Extract<P | Exclude<keyof Fields, P>, F>>;
+
+export interface CommonFields {
+  id: number;
+  createdBy: User['id'];
+  createdAt: Date;
+  updatedBy: User['id'];
+  updatedAt: Date;
+  deletedBy: User['id'];
+  detetedAt: Date;
+}
+
+export interface CommonPopulates {
+  createdBy: User;
+  updatedBy: User;
+  deletedBy: User;
+}
+
 export const COMMON_FIELDS = {
   createdBy: {
     type: 'string',
@@ -115,3 +138,15 @@ export interface BaseModelInterface {
 
 export const COMMON_DEFAULT_SCOPES = ['notDeleted'];
 export const COMMON_DELETED_SCOPES = ['-notDeleted', 'deleted'];
+
+export enum Frequency {
+  DAY = 'DAY',
+  WEEK = 'WEEK',
+  MONTH = 'MONTH',
+}
+
+export const FrequencyLabel = {
+  [Frequency.DAY]: 'Vakar',
+  [Frequency.WEEK]: 'Prėjusią savaitę',
+  [Frequency.MONTH]: 'Praėjusį mėnesį',
+};
