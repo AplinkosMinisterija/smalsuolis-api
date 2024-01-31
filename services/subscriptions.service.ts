@@ -20,12 +20,11 @@ import { lt } from 'date-fns/locale';
 import { format } from 'date-fns/format';
 import { App } from './apps.service';
 import { emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
+import PostgisMixin from 'moleculer-postgis';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
 const sender = 'noreply@biip.lt';
-
-const client = new ServerClient(process.env.POSTMARK_KEY);
 
 interface Fields extends CommonFields {
   user: User['id'];
@@ -47,7 +46,7 @@ export type Subscription<
 
 @Service({
   name: 'subscriptions',
-  mixins: [DbConnection({ collection: 'subscriptions' }), Cron],
+  mixins: [DbConnection({ collection: 'subscriptions' }), PostgisMixin({ srid: 3346 }), Cron],
   settings: {
     fields: {
       id: {
@@ -79,6 +78,10 @@ export type Subscription<
             }),
           );
         },
+      },
+      geom: {
+        type: 'any',
+        geom: true,
       },
       frequency: {
         // email sending frequency
@@ -131,6 +134,7 @@ export type Subscription<
 export default class SubscriptionsService extends moleculer.Service {
   @Action()
   async handleEmails(ctx: Context<{ frequency: Frequency }>) {
+    if (!emailCanBeSent()) return;
     const frequency = ctx.params.frequency;
     const date = getDateByFrequency(frequency);
     const subscriptions = await this.findEntities(null, {
@@ -156,29 +160,44 @@ export default class SubscriptionsService extends moleculer.Service {
 
     for (const sub of subscriptions) {
       const filtered = events.filter((e) => sub.apps.includes(e.app.id));
-      const mappedEvents = filtered.slice(0, 6).map((e) => ({
-        app_name: e.app.name,
-        event_name: e.name,
-        date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
-          locale: lt,
-        }),
-        event_content: truncateString(e.body, 500),
-        url: e.url,
-      }));
-      if (!filtered.length || !emailCanBeSent()) return;
+      if (filtered.length) {
+        const mappedEvents = filtered.slice(0, 6).map((e) => ({
+          app_name: e.app.name,
+          event_name: e.name,
+          date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
+            locale: lt,
+          }),
+          event_content: truncateString(e.body, 500),
+          url: e.url,
+        }));
 
-      const content = {
-        From: sender,
-        To: sub.user.email,
-        TemplateId: 34626749,
-        TemplateModel: {
-          frequency: FrequencyLabel[frequency],
-          total_events: filtered.length,
-          events: mappedEvents,
-          action_url: 'https://smalsuolis.lt', //TODO: replace with the actual link
-        },
+        const content = {
+          From: sender,
+          To: sub.user.email,
+          TemplateId: 34626749,
+          TemplateModel: {
+            frequency: FrequencyLabel[frequency],
+            total_events: filtered.length,
+            events: mappedEvents,
+            action_url: 'https://smalsuolis.lt', //TODO: replace with the actual link
+          },
+        };
+        await this.client.sendEmailWithTemplate(content);
+      }
+    }
+  }
+
+  created() {
+    if (['production', 'staging'].includes(process.env.NODE_ENV)) {
+      if (!process.env.POSTMARK_KEY) {
+        this.broker.fatal('POSTMARK is not configured');
+      }
+
+      this.client = new ServerClient(process.env.POSTMARK_KEY);
+    } else {
+      this.client = {
+        sendEmailWithTemplate: (...args: unknown[]) => console.log('Sending email', ...args),
       };
-      await client.sendEmailWithTemplate(content);
     }
   }
 }
