@@ -9,18 +9,21 @@ import {
   COMMON_DEFAULT_SCOPES,
   COMMON_SCOPES,
   FieldHookCallback,
-  BaseModelInterface,
   EndpointType,
   throwNotFoundError,
   UserAuthMeta,
+  CommonFields,
+  UserType,
 } from '../types';
-import PostgisMixin from 'moleculer-postgis';
 
-export enum UserType {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-}
-export interface User extends BaseModelInterface {
+const VISIBLE_TO_USER_SCOPE = 'tenant';
+const NOT_ADMINS_SCOPE = 'notAdmins';
+const AUTH_PROTECTED_SCOPES = [...COMMON_DEFAULT_SCOPES, VISIBLE_TO_USER_SCOPE, NOT_ADMINS_SCOPE];
+const USERS_WITHOUT_AUTH_SCOPES = [`-${VISIBLE_TO_USER_SCOPE}`];
+const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
+const USERS_DEFAULT_SCOPES = [...USERS_WITHOUT_AUTH_SCOPES, ...USERS_WITHOUT_NOT_ADMINS_SCOPE];
+
+export interface User extends CommonFields {
   firstName: string;
   lastName: string;
   email: string;
@@ -30,27 +33,13 @@ export interface User extends BaseModelInterface {
   isServer?: boolean;
 }
 
-const VISIBLE_TO_USER_SCOPE = 'tenant';
-const NOT_ADMINS_SCOPE = 'notAdmins';
-
-const AUTH_PROTECTED_SCOPES = [...COMMON_DEFAULT_SCOPES, VISIBLE_TO_USER_SCOPE, NOT_ADMINS_SCOPE];
-
-export const USERS_WITHOUT_AUTH_SCOPES = [`-${VISIBLE_TO_USER_SCOPE}`];
-const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
-export const USERS_DEFAULT_SCOPES = [
-  ...USERS_WITHOUT_AUTH_SCOPES,
-  ...USERS_WITHOUT_NOT_ADMINS_SCOPE,
-];
-
 @Service({
   name: 'users',
-
   mixins: [
     DbConnection({
       collection: 'users',
     }),
   ],
-
   settings: {
     fields: {
       id: {
@@ -59,21 +48,15 @@ export const USERS_DEFAULT_SCOPES = [
         primaryKey: true,
         secure: true,
       },
-
       firstName: 'string',
-
       lastName: 'string',
-
       email: 'string',
-
       phone: 'string',
-
       type: {
         type: 'string',
         enum: Object.values(UserType),
         default: UserType.USER,
       },
-
       authUser: {
         type: 'number',
         columnType: 'integer',
@@ -83,46 +66,36 @@ export const USERS_DEFAULT_SCOPES = [
           await ctx.call('auth.users.remove', { id: entity.authUserId }, { meta: ctx?.meta });
         },
       },
-
       ...COMMON_FIELDS,
     },
   },
-
   scopes: {
     ...COMMON_SCOPES,
     notAdmins(query: any) {
       query.type = UserType.USER;
       return query;
     },
-
     defaultScopes: AUTH_PROTECTED_SCOPES,
   },
-
   actions: {
     create: {
       rest: null,
     },
-
     get: {
       auth: EndpointType.ADMIN,
     },
-
     list: {
       auth: EndpointType.ADMIN,
     },
-
     remove: {
       rest: null,
     },
-
     update: {
       rest: null,
     },
-
     count: {
       rest: null,
     },
-
     find: {
       rest: null,
     },

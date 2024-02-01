@@ -39,14 +39,12 @@ export type Event<
 
 @Service({
   name: 'events',
-
   mixins: [
     DbConnection({
       collection: 'events',
     }),
     PostgisMixin({ srid: 3346 }),
   ],
-
   settings: {
     fields: {
       id: {
@@ -84,14 +82,11 @@ export type Event<
         type: 'boolean',
         default: false,
       },
-
       ...COMMON_FIELDS,
     },
-
     scopes: {
       ...COMMON_SCOPES,
     },
-
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {

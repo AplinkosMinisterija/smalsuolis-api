@@ -4,8 +4,8 @@ import moleculer, { Context, RestSchema } from 'moleculer';
 import { Action, Event, Method, Service } from 'moleculer-decorators';
 
 import authMixin from 'biip-auth-nodejs/mixin';
-import { User, USERS_DEFAULT_SCOPES, UserType } from './users.service';
-import { EndpointType, throwNotFoundError, UserAuthMeta } from '../types';
+import { User } from './users.service';
+import { EndpointType, throwNotFoundError, UserAuthMeta, UserType } from '../types';
 
 @Service({
   name: 'auth',

@@ -11,6 +11,11 @@ export enum EndpointType {
   SELF = 'SELF',
 }
 
+export enum UserType {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+}
+
 export interface UserAuthMeta {
   user: User;
   authToken: string;
@@ -125,16 +130,6 @@ export const COMMON_SCOPES = {
     deletedAt: { $exists: true },
   },
 };
-
-export interface BaseModelInterface {
-  id?: number;
-  createdAt?: Date;
-  createdBy?: number;
-  updatedAt?: Date;
-  updatedBy?: number;
-  deletedAt?: Date;
-  deletedBy?: number;
-}
 
 export const COMMON_DEFAULT_SCOPES = ['notDeleted'];
 export const COMMON_DELETED_SCOPES = ['-notDeleted', 'deleted'];

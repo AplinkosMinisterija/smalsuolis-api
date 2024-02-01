@@ -2,13 +2,8 @@ import moleculer, { Context } from 'moleculer';
 import { ActionSchema, ActionParamSchema } from 'moleculer';
 import { IncomingMessage } from 'http';
 
-import {
-  DbAdapter,
-  DbContextParameters,
-  DbServiceSettings,
-} from 'moleculer-db';
-import { AppAuthMeta, UserAuthMeta } from './constants';
-import { UserType } from '../services/users.service';
+import { DbAdapter, DbContextParameters, DbServiceSettings } from 'moleculer-db';
+import { AppAuthMeta, UserAuthMeta, UserType } from './constants';
 
 export type FieldHookCallback = {
   ctx: Context<null, UserAuthMeta & AppAuthMeta>;
@@ -51,9 +46,7 @@ export interface DBPagination<T> {
   totalPages: number;
 }
 
-export class MoleculerDBService<
-  R
-> extends moleculer.Service<DbServiceSettings> {
+export class MoleculerDBService<R> extends moleculer.Service<DbServiceSettings> {
   public metadata!: {
     $category: string;
     $official: boolean;
@@ -77,10 +70,7 @@ export class MoleculerDBService<
    * @param {any} origParams
    * @returns {Promise}
    */
-  public sanitizeParams!: (
-    ctx: Context,
-    params?: DbContextParameters
-  ) => Promise<any>;
+  public sanitizeParams!: (ctx: Context, params?: DbContextParameters) => Promise<any>;
 
   /**
    * Get entity(ies) by ID(s).
@@ -90,10 +80,7 @@ export class MoleculerDBService<
    * @param {Boolean} decoding - Need to decode IDs.
    * @returns {Object|Array<Object>} Found entity(ies).
    */
-  public getById!: (
-    id: string | number | string[],
-    decoding?: boolean
-  ) => Promise<R>;
+  public getById!: (id: string | number | string[], decoding?: boolean) => Promise<R>;
 
   /**
    * Clear the cache & call entity lifecycle events
@@ -103,11 +90,7 @@ export class MoleculerDBService<
    * @param {Context} ctx
    * @returns {Promise}
    */
-  public entityChanged!: (
-    type: string,
-    json: number | any[] | any,
-    ctx: Context
-  ) => Promise<R>;
+  public entityChanged!: (type: string, json: number | any[] | any, ctx: Context) => Promise<R>;
 
   /**
    * Clear cached entities
@@ -124,11 +107,7 @@ export class MoleculerDBService<
    * @param {Object}      Params
    * @returns {Array|Object}
    */
-  public transformDocuments!: (
-    ctx: Context,
-    params: any,
-    docs: any
-  ) => Promise<R | R[]>;
+  public transformDocuments!: (ctx: Context, params: any, docs: any) => Promise<R | R[]>;
 
   /**
    * Filter fields in the entity object
@@ -155,11 +134,7 @@ export class MoleculerDBService<
    * @param {Array}      populateFields
    * @returns  {Promise}
    */
-  public populateDocs!: <R>(
-    ctx: Context,
-    docs: any,
-    populateFields: any[]
-  ) => Promise<R>;
+  public populateDocs!: <R>(ctx: Context, docs: any, populateFields: any[]) => Promise<R>;
 
   /**
    * Validate an entity by validator.
