@@ -1,7 +1,6 @@
 'use strict';
 
-import { isEmpty } from 'lodash';
-import moleculer, { Context, GenericObject } from 'moleculer';
+import moleculer from 'moleculer';
 import { Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
 
@@ -12,7 +11,6 @@ import {
   COMMON_FIELDS,
   COMMON_SCOPES,
   EndpointType,
-  UserAuthMeta,
 } from '../types';
 
 export interface Event extends BaseModelInterface {
@@ -88,21 +86,6 @@ export interface Event extends BaseModelInterface {
 
     scopes: {
       ...COMMON_SCOPES,
-      async visibleToUser(query: GenericObject, ctx: Context<null, UserAuthMeta>) {
-        const { user } = ctx?.meta;
-
-        if (!user?.id || (isEmpty(user.geom) && isEmpty(user.apps))) return query;
-
-        if (!isEmpty(user.geom)) {
-          query.geom = user.geom;
-        }
-
-        if (!isEmpty(user.apps)) {
-          query.app = { $in: user.apps };
-        }
-
-        return query;
-      },
     },
 
     defaultScopes: [...COMMON_DEFAULT_SCOPES],

@@ -52,8 +52,6 @@ export const USERS_DEFAULT_SCOPES = [
     DbConnection({
       collection: 'users',
     }),
-
-    PostgisMixin({ srid: 3346 }),
   ],
 
   settings: {
@@ -77,20 +75,6 @@ export const USERS_DEFAULT_SCOPES = [
         type: 'string',
         enum: Object.values(UserType),
         default: UserType.USER,
-      },
-
-      geom: {
-        type: 'any',
-        geom: true,
-      },
-
-      apps: {
-        type: 'array',
-        columnType: 'json',
-        items: { type: 'number' },
-        populate: {
-          action: 'apps.resolve',
-        },
       },
 
       authUser: {

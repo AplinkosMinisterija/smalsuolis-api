@@ -45,6 +45,7 @@
     "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.60.1",
     "biip-auth-nodejs": "github:DadPatch/biip-auth-nodejs",
+    "date-fns": "^3.3.1",
     "dotenv": "^16.0.0",
     "geojsonjs": "^0.1.2",
     "ioredis": "^4.28.5",
@@ -66,7 +67,7 @@
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "postmark": "^4.0.2",
-    "typescript": "^4.5.5"
+    "typescript": "5.0.2"
   },
   "engines": {
     "node": ">=20.0.0 <21.0.0"
