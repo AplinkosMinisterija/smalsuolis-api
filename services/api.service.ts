@@ -181,15 +181,10 @@ export default class ApiService extends moleculer.Service {
             authUser: authUser,
           });
 
-          const userWithGeom: User = await ctx.call('users.resolve', {
-            id: user.id,
-            populate: ['geom'],
-          });
-
           if (user && user.id) {
             ctx.meta.authUser = authUser;
             ctx.meta.authToken = token;
-            return Promise.resolve(userWithGeom);
+            return Promise.resolve(user);
           }
         } catch (e) {
           return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
