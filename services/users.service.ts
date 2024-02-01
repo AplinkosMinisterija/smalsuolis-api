@@ -3,7 +3,6 @@
 import moleculer, { Context } from 'moleculer';
 import { Action, Event, Service } from 'moleculer-decorators';
 
-import PostgisMixin from 'moleculer-postgis';
 import DbConnection from '../mixins/database.mixin';
 import {
   BaseModelInterface,
@@ -15,7 +14,6 @@ import {
   throwNotFoundError,
   UserAuthMeta,
 } from '../types';
-import { App } from './apps.service';
 
 export enum UserType {
   ADMIN = 'ADMIN',
@@ -29,8 +27,6 @@ export interface User extends BaseModelInterface {
   type: UserType;
   authUser: number;
   isServer?: boolean;
-  geom?: any;
-  apps?: App[];
 }
 
 const VISIBLE_TO_USER_SCOPE = 'tenant';
