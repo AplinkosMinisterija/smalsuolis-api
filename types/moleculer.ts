@@ -1,9 +1,21 @@
 import moleculer, { Context } from 'moleculer';
 import { ActionSchema, ActionParamSchema } from 'moleculer';
 import { IncomingMessage } from 'http';
-
 import { DbAdapter, DbContextParameters, DbServiceSettings } from 'moleculer-db';
-import { AppAuthMeta, UserAuthMeta, UserType } from './constants';
+import { UserType } from './constants';
+import { App } from '../services/apps.service';
+import { User } from '../services/users.service';
+
+export interface AppAuthMeta {
+  app: App;
+}
+
+export interface UserAuthMeta {
+  user: User;
+  authToken: string;
+  authUser: any;
+  app: any;
+}
 
 export type FieldHookCallback = {
   ctx: Context<null, UserAuthMeta & AppAuthMeta>;
@@ -14,18 +26,34 @@ export type FieldHookCallback = {
   entity: any;
 };
 
+export type Table<
+  Fields = {},
+  Populates = {},
+  P extends keyof Populates = never,
+  F extends keyof (Fields & Populates) = keyof Fields,
+> = Pick<Omit<Fields, P> & Pick<Populates, P>, Extract<P | Exclude<keyof Fields, P>, F>>;
+
+export interface CommonFields {
+  id: number;
+  createdBy: User['id'];
+  createdAt: Date;
+  updatedBy: User['id'];
+  updatedAt: Date;
+  deletedBy: User['id'];
+  detetedAt: Date;
+}
+
+export interface CommonPopulates {
+  createdBy: User;
+  updatedBy: User;
+  deletedBy: User;
+}
+
 export interface EntityChangedParams<T> {
   type: 'create' | 'update' | 'replace' | 'remove' | 'clear';
   data: T;
   oldData?: T;
 }
-// export type EventCallback<T> = {
-//   ctx: Context<null, UserAuthMeta>;
-//   data: T;
-//   oldData?: T;
-//   type: string;
-//   opts: any;
-// };
 
 export type MultipartMeta = {
   $multipart: Record<string, string>;

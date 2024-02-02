@@ -1,8 +1,5 @@
 import _ from 'lodash';
-import Moleculer, { Errors } from 'moleculer';
-import { App } from '../services/apps.service';
 import { FieldHookCallback } from './';
-import { User } from '../services/users.service';
 
 export enum EndpointType {
   PUBLIC = 'PUBLIC',
@@ -16,57 +13,12 @@ export enum UserType {
   USER = 'USER',
 }
 
-export interface UserAuthMeta {
-  user: User;
-  authToken: string;
-  authUser: any;
-  app: any;
-}
-export interface AppAuthMeta {
-  app: App;
-}
-
-export function throwUnauthorizedError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(message || `Unauthorized.`, 401, 'UNAUTHORIZED');
-}
-
-export function throwNotFoundError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(message || `Not found.`, 404, 'NOT_FOUND');
-}
-
-export function throwNoRightsError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(message || `No rights.`, 401, 'NO_RIGHTS');
-}
-
 export function queryBoolean(field: string, value: boolean = false) {
   let fieldValue = `${_.snakeCase(field)} IS`;
   if (!value) {
     fieldValue += ' NOT';
   }
   return { $raw: `${fieldValue} TRUE` };
-}
-
-export type Table<
-  Fields = {},
-  Populates = {},
-  P extends keyof Populates = never,
-  F extends keyof (Fields & Populates) = keyof Fields,
-> = Pick<Omit<Fields, P> & Pick<Populates, P>, Extract<P | Exclude<keyof Fields, P>, F>>;
-
-export interface CommonFields {
-  id: number;
-  createdBy: User['id'];
-  createdAt: Date;
-  updatedBy: User['id'];
-  updatedAt: Date;
-  deletedBy: User['id'];
-  detetedAt: Date;
-}
-
-export interface CommonPopulates {
-  createdBy: User;
-  updatedBy: User;
-  deletedBy: User;
 }
 
 export const COMMON_FIELDS = {
