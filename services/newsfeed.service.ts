@@ -1,4 +1,5 @@
 'use strict';
+import { isEmpty } from 'lodash';
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { intersectsQuery } from 'moleculer-postgis';
@@ -9,39 +10,13 @@ import { Subscription } from './subscriptions.service';
 @Service({
   name: 'newsfeed',
 
-  scope: {
-    async applyFilters(ctx: Context<any, UserAuthMeta>) {
-      ctx.params.query = parseToJsonIfNeeded(ctx.params.query) || {};
-      const { user } = ctx.meta;
-
-      const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
-        query: {
-          user: user.id,
-          active: true,
-        },
-        populate: ['geom'],
-      });
-
-      const subscriptionQuery = subscriptions.map((subscription) => ({
-        app: { $in: subscription.apps },
-        $raw: intersectsQuery('geom', subscription.geom, 3346),
-      }));
-
-      if (ctx?.params?.query?.$or) {
-        ctx.params.query.$and = [ctx?.params?.query?.$or, { $or: subscriptionQuery }];
-        delete ctx?.params?.query?.$or;
-      } else {
-        ctx.params.query.$or = subscriptionQuery;
-      }
-
-      return ctx;
-    },
-  },
-
-  defaultScopes: ['applyFilters'],
-
   hooks: {
-    before: {},
+    before: {
+      list: ['applyFilters'],
+      find: ['applyFilters'],
+      get: ['applyFilters'],
+      resolve: ['applyFilters'],
+    },
   },
 })
 export default class NewsfeedService extends moleculer.Service {
@@ -49,6 +24,7 @@ export default class NewsfeedService extends moleculer.Service {
     rest: 'GET /',
   })
   async list(ctx: Context<any, UserAuthMeta>) {
+    console.log(ctx.params, 'param');
     return ctx.call('events.list', {
       ...ctx,
       query: { ...ctx.params.query },
@@ -95,6 +71,11 @@ export default class NewsfeedService extends moleculer.Service {
       },
       populate: ['geom'],
     });
+
+    if (isEmpty(subscriptions)) {
+      ctx.params.query.$or = { app: { $in: [] } };
+      return ctx;
+    }
 
     const subscriptionQuery = subscriptions.map((subscription) => ({
       app: { $in: subscription.apps },
