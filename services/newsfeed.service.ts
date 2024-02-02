@@ -24,7 +24,6 @@ export default class NewsfeedService extends moleculer.Service {
     rest: 'GET /',
   })
   async list(ctx: Context<any, UserAuthMeta>) {
-    console.log(ctx.params, 'param');
     return ctx.call('events.list', {
       ...ctx,
       query: { ...ctx.params.query },
@@ -49,7 +48,7 @@ export default class NewsfeedService extends moleculer.Service {
     });
   }
 
-  @Action()
+  @Action({ rest: 'GET /resolve' })
   async resolve(ctx: Context<any, UserAuthMeta>) {
     const { id } = ctx.params;
     return ctx.call('events.resolve', {
