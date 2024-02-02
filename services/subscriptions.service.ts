@@ -1,7 +1,7 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Service } from 'moleculer-decorators';
+import { Action, Method, Service } from 'moleculer-decorators';
 import DbConnection from '../mixins/database.mixin';
 import {
   COMMON_DEFAULT_SCOPES,
@@ -9,9 +9,14 @@ import {
   COMMON_SCOPES,
   CommonFields,
   CommonPopulates,
+  EndpointType,
+  FieldHookCallback,
   Frequency,
   FrequencyLabel,
   Table,
+  throwNoRightsError,
+  throwNotFoundError,
+  UserAuthMeta,
 } from '../types';
 import { User } from './users.service';
 import { Event } from './events.service';
@@ -31,7 +36,6 @@ interface Fields extends CommonFields {
   apps: number[];
   frequency: Frequency;
   active: boolean;
-  lastSent: Date;
 }
 
 interface Populates extends CommonPopulates {
@@ -61,7 +65,16 @@ export type Subscription<
         required: true,
         columnType: 'integer',
         columnName: 'userId',
+        immutable: true,
+        readonly: true,
         populate: 'users.get',
+        onCreate: async ({ ctx }: FieldHookCallback) => ctx.meta.user?.id,
+        onUpdate: async ({ ctx, entity }: FieldHookCallback) => {
+          if (entity.userId !== ctx.meta.user?.id) {
+            return throwNoRightsError('Unauthorized');
+          }
+          return entity.userId;
+        },
       },
       apps: {
         //apps subscribed to
@@ -69,6 +82,7 @@ export type Subscription<
         required: true,
         items: { type: 'number' },
         columnName: 'apps',
+        validate: 'validateApps',
         populate(ctx: any, _values: any, items: Subscription[]) {
           return Promise.all(
             items.map((item: Subscription) => {
@@ -82,6 +96,7 @@ export type Subscription<
       geom: {
         type: 'any',
         geom: true,
+        required: false, //TODO: should be true when map is ready
       },
       frequency: {
         // email sending frequency
@@ -97,11 +112,33 @@ export type Subscription<
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
+    create: {
+      auth: EndpointType.USER,
+    },
+    update: {
+      auth: EndpointType.USER,
+    },
     list: {
+      auth: EndpointType.USER,
+    },
+    find: {
+      auth: EndpointType.USER,
+    },
+    get: {
+      auth: EndpointType.USER,
+    },
+    remove: {
       rest: null,
     },
     count: {
       rest: null,
+    },
+  },
+  hooks: {
+    before: {
+      get: 'beforeSelect',
+      list: 'beforeSelect',
+      find: 'beforeSelect',
     },
   },
   crons: [
@@ -170,7 +207,6 @@ export default class SubscriptionsService extends moleculer.Service {
           event_content: truncateString(e.body, 500),
           url: e.url,
         }));
-
         const content = {
           From: sender,
           To: sub.user.email,
@@ -187,12 +223,34 @@ export default class SubscriptionsService extends moleculer.Service {
     }
   }
 
+  @Method
+  async validateApps({ ctx, value, entity }: FieldHookCallback) {
+    const apps: App[] = await ctx.call('apps.find', {
+      query: {
+        id: { $in: value },
+      },
+    });
+    const ids = apps.map((app: App) => app.id);
+    const diff = value.filter((id: number) => !ids.includes(id));
+    if (apps.length !== value.length) {
+      return `Invalid app ids [${diff.toString()}]`;
+    }
+    return true;
+  }
+
+  @Method
+  async beforeSelect(ctx: Context<any, UserAuthMeta>) {
+    return (ctx.params.query = {
+      ...ctx.params.query,
+      user: ctx.meta.user.id,
+    });
+  }
+
   created() {
     if (emailCanBeSent()) {
       if (!process.env.POSTMARK_KEY) {
         this.broker.fatal('POSTMARK is not configured');
       }
-
       this.client = new ServerClient(process.env.POSTMARK_KEY);
     } else {
       this.client = {

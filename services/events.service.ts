@@ -64,7 +64,7 @@ export type Event<
         columnType: 'integer',
         hidden: 'byDefault',
         columnName: 'appId',
-        populate: 'apps.get',
+        populate: 'apps.resolve',
       },
       url: 'string',
       body: 'string',

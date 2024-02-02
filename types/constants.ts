@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import Moleculer, { Context, Errors } from 'moleculer';
+import Moleculer, { Errors } from 'moleculer';
 import { App } from '../services/apps.service';
 import { FieldHookCallback } from './';
 import { User } from '../services/users.service';
@@ -32,6 +32,10 @@ export function throwUnauthorizedError(message?: string): Errors.MoleculerError 
 
 export function throwNotFoundError(message?: string): Errors.MoleculerError {
   throw new Moleculer.Errors.MoleculerClientError(message || `Not found.`, 404, 'NOT_FOUND');
+}
+
+export function throwNoRightsError(message?: string): Errors.MoleculerError {
+  throw new Moleculer.Errors.MoleculerClientError(message || `No rights.`, 401, 'NO_RIGHTS');
 }
 
 export function queryBoolean(field: string, value: boolean = false) {
