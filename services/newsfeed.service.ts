@@ -25,16 +25,14 @@ export default class NewsfeedService extends moleculer.Service {
   })
   async list(ctx: Context<any, UserAuthMeta>) {
     return ctx.call('events.list', {
-      ...ctx,
-      query: { ...ctx.params.query },
+      ...ctx.params,
     });
   }
 
   @Action()
   async find(ctx: Context<any, UserAuthMeta>) {
     return ctx.call('events.find', {
-      ...ctx,
-      query: { ...ctx.params.query },
+      ...ctx.params,
     });
   }
 
@@ -42,9 +40,8 @@ export default class NewsfeedService extends moleculer.Service {
   async get(ctx: Context<any, UserAuthMeta>) {
     const { id } = ctx.params;
     return ctx.call('events.get', {
-      ...ctx,
+      ...ctx.params,
       id,
-      query: { ...ctx.params.query },
     });
   }
 
@@ -52,9 +49,8 @@ export default class NewsfeedService extends moleculer.Service {
   async resolve(ctx: Context<any, UserAuthMeta>) {
     const { id } = ctx.params;
     return ctx.call('events.resolve', {
-      ...ctx,
+      ...ctx.params,
       id,
-      query: { ...ctx.params.query },
     });
   }
 
@@ -77,7 +73,7 @@ export default class NewsfeedService extends moleculer.Service {
     }
 
     const subscriptionQuery = subscriptions.map((subscription) => ({
-      app: { $in: subscription.apps },
+      ...(!isEmpty(subscription.apps) && { app: { $in: subscription.apps } }),
       $raw: intersectsQuery('geom', subscription.geom, 3346),
     }));
 
