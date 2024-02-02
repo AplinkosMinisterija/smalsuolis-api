@@ -67,7 +67,7 @@ export type Subscription<
         columnName: 'userId',
         immutable: true,
         readonly: true,
-        populate: 'users.get',
+        populate: 'users.resolve',
         onCreate: async ({ ctx }: FieldHookCallback) => ctx.meta.user?.id,
         onUpdate: async ({ ctx, entity }: FieldHookCallback) => {
           if (entity.userId !== ctx.meta.user?.id) {
@@ -107,9 +107,13 @@ export type Subscription<
       ...COMMON_FIELDS,
     },
     scopes: {
+      user(query: any, ctx: Context<null, UserAuthMeta>, params: any) {
+        query.user = ctx.meta.user?.id;
+        return query;
+      },
       ...COMMON_SCOPES,
     },
-    defaultScopes: [...COMMON_DEFAULT_SCOPES],
+    defaultScopes: [...COMMON_DEFAULT_SCOPES, 'user'],
   },
   actions: {
     create: {
@@ -132,13 +136,6 @@ export type Subscription<
     },
     count: {
       rest: null,
-    },
-  },
-  hooks: {
-    before: {
-      get: 'beforeSelect',
-      list: 'beforeSelect',
-      find: 'beforeSelect',
     },
   },
   crons: [
