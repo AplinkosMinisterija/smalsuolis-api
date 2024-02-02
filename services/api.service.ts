@@ -1,17 +1,10 @@
+import { User } from '@sentry/types';
 import pick from 'lodash/pick';
 import moleculer, { Context, Errors } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import ApiGateway from 'moleculer-web';
-import {
-  AppAuthMeta,
-  EndpointType,
-  RequestMessage,
-  UserAuthMeta,
-  throwUnauthorizedError,
-} from '../types';
-import { App } from './apps.service';
+import { EndpointType, RequestMessage, throwUnauthorizedError, UserAuthMeta } from '../types';
 import { UserType } from './users.service';
-import { User } from '@sentry/types';
 
 @Service({
   name: 'api',
