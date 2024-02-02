@@ -34,6 +34,7 @@ const sender = 'noreply@biip.lt';
 interface Fields extends CommonFields {
   user: User['id'];
   apps: number[];
+  geom: any;
   frequency: Frequency;
   active: boolean;
 }

@@ -5,8 +5,8 @@ import { Action, Event, Service } from 'moleculer-decorators';
 
 import DbConnection from '../mixins/database.mixin';
 import {
-  COMMON_FIELDS,
   COMMON_DEFAULT_SCOPES,
+  COMMON_FIELDS,
   COMMON_SCOPES,
   FieldHookCallback,
   EndpointType,

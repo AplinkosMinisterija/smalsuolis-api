@@ -5,13 +5,13 @@ import { Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
 import DbConnection from '../mixins/database.mixin';
 import {
-  COMMON_FIELDS,
+  CommonFields,
+  CommonPopulates,
   COMMON_DEFAULT_SCOPES,
+  COMMON_FIELDS,
   COMMON_SCOPES,
   EndpointType,
-  CommonPopulates,
   Table,
-  CommonFields,
 } from '../types';
 import { App } from './apps.service';
 

@@ -1,3 +1,4 @@
+import { User } from '@sentry/types';
 import pick from 'lodash/pick';
 import moleculer, { Context, Errors } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
@@ -9,7 +10,6 @@ import {
   throwUnauthorizedError,
   UserType,
 } from '../types';
-import { User } from '@sentry/types';
 
 @Service({
   name: 'api',
