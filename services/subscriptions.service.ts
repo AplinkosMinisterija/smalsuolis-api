@@ -235,14 +235,6 @@ export default class SubscriptionsService extends moleculer.Service {
     return true;
   }
 
-  @Method
-  async beforeSelect(ctx: Context<any, UserAuthMeta>) {
-    return (ctx.params.query = {
-      ...ctx.params.query,
-      user: ctx.meta.user.id,
-    });
-  }
-
   created() {
     if (emailCanBeSent()) {
       if (!process.env.POSTMARK_KEY) {
