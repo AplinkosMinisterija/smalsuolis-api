@@ -6,8 +6,8 @@ import ApiGateway from 'moleculer-web';
 import {
   EndpointType,
   RequestMessage,
-  UserAuthMeta,
   throwUnauthorizedError,
+  UserAuthMeta,
   UserType,
 } from '../types';
 
@@ -169,27 +169,37 @@ export default class ApiService extends moleculer.Service {
       return Promise.resolve(null);
     }
 
-    if (!auth?.startsWith?.('Bearer') && !auth?.startsWith?.('Token')) {
-      return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
-    }
-
-    const token = auth.split(' ')[1];
-
-    try {
-      const authUser: any = await ctx.call('auth.users.resolveToken', null, {
-        meta: { authToken: token },
-      });
-      const user: User = await ctx.call('users.resolveByAuthUser', {
-        authUser: authUser,
-      });
-      if (user && user.id) {
-        ctx.meta.authUser = authUser;
-        ctx.meta.authToken = token;
-        return Promise.resolve(user);
+    if (auth) {
+      const type = auth.split(' ')[0];
+      let token: string | undefined;
+      if (type === 'Token' || type === 'Bearer') {
+        token = auth.split(' ')[1];
       }
-    } catch (e) {
+
+      if (token) {
+        try {
+          const authUser: any = await ctx.call('auth.users.resolveToken', null, {
+            meta: { authToken: token },
+          });
+
+          const user: User = await ctx.call('users.resolveByAuthUser', {
+            authUser: authUser,
+          });
+
+          if (user && user.id) {
+            ctx.meta.authUser = authUser;
+            ctx.meta.authToken = token;
+            return Promise.resolve(user);
+          }
+        } catch (e) {
+          return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
+        }
+      }
+
       return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_INVALID_TOKEN));
     }
+
+    return this.rejectAuth(ctx, throwUnauthorizedError(ApiGateway.Errors.ERR_NO_TOKEN));
   }
   /**
    * Authorize the request.
