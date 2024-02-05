@@ -1,4 +1,6 @@
 import { Frequency } from '../types';
+import { Subscription } from '../services/subscriptions.service';
+import { intersectsQuery } from 'moleculer-postgis';
 
 type QueryObject = { [key: string]: any };
 
@@ -41,4 +43,23 @@ export function truncateString(text: string, num: number) {
   } else {
     return text;
   }
+}
+
+// returns query with apps and geom filtering based on provided subscriptions.
+export async function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[]) {
+  if (!subscriptions?.length) {
+    query.$or = { app: { $in: [] } };
+    return query;
+  }
+  const subscriptionQuery = subscriptions.map((subscription) => ({
+    ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+    $raw: intersectsQuery('geom', subscription.geom, 3346),
+  }));
+  if (query?.$or) {
+    query.$and = [query?.$or, { $or: subscriptionQuery }];
+    delete query?.$or;
+  } else {
+    query.$or = subscriptionQuery;
+  }
+  return query;
 }
