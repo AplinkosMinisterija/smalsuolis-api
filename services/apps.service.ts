@@ -1,20 +1,17 @@
 'use strict';
 
-import moleculer, { Context } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
-
-import { generateToken, verifyToken } from '../utils';
+import moleculer from 'moleculer';
+import { Service } from 'moleculer-decorators';
 import DbConnection from '../mixins/database.mixin';
 import {
   COMMON_FIELDS,
   COMMON_DEFAULT_SCOPES,
   COMMON_SCOPES,
-  FieldHookCallback,
-  BaseModelInterface,
   EndpointType,
+  CommonFields,
 } from '../types';
 
-export interface App extends BaseModelInterface {
+export interface App extends CommonFields {
   name: string;
   key: string;
   apiKey: string;
@@ -27,14 +24,12 @@ export const APPS = {
 
 @Service({
   name: 'apps',
-
   mixins: [
     DbConnection({
       collection: 'apps',
       rest: false,
     }),
   ],
-
   settings: {
     fields: {
       id: {
@@ -43,25 +38,19 @@ export const APPS = {
         primaryKey: true,
         secure: true,
       },
-
       key: 'string|required',
       name: 'string|required',
-
       apiKey: {
         type: 'string',
         hidden: true,
       },
-
       ...COMMON_FIELDS,
     },
-
     scopes: {
       ...COMMON_SCOPES,
     },
-
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
-
   actions: {
     create: {
       auth: EndpointType.ADMIN,

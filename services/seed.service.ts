@@ -2,7 +2,6 @@
 
 import moleculer, { Context, ServiceBroker } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { User } from './users.service';
 import { APPS, App } from './apps.service';
 
 @Service({
