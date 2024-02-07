@@ -336,3 +336,5 @@ export interface RequestMessage extends IncomingMessage {
   $params: ActionParamSchema;
   $route: RouteSchema;
 }
+
+export type QueryObject = { [key: string]: any };

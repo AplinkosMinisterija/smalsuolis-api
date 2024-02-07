@@ -1,24 +1,38 @@
 'use strict';
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { COMMON_DEFAULT_SCOPES, Frequency, FrequencyLabel, UserAuthMeta } from '../types';
-import {
-  parseToJsonIfNeeded,
-  applyNewsfeedFilters,
-  emailCanBeSent,
-  getDateByFrequency,
-  truncateString,
-} from '../utils';
+import { Frequency, FrequencyLabel, QueryObject, UserAuthMeta } from '../types';
+import { parseToJsonIfNeeded, emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
 import { Subscription } from './subscriptions.service';
 import { Event } from './events.service';
 import { format } from 'date-fns/format';
 import { lt } from 'date-fns/locale';
 import { ServerClient } from 'postmark';
 import { User } from './users.service';
+import { intersectsQuery } from 'moleculer-postgis';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
 const sender = 'noreply@biip.lt';
+
+// returns query with apps and geom filtering based on provided subscriptions.
+function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[]) {
+  if (!subscriptions?.length) {
+    query.$or = { app: { $in: [] } };
+    return query;
+  }
+  const subscriptionQuery = subscriptions.map((subscription) => ({
+    ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+    $raw: intersectsQuery('geom', subscription.geom, 3346),
+  }));
+  if (query?.$or) {
+    query.$and = [query?.$or, { $or: subscriptionQuery }];
+    delete query?.$or;
+  } else {
+    query.$or = subscriptionQuery;
+  }
+  return query;
+}
 
 @Service({
   name: 'newsfeed',
