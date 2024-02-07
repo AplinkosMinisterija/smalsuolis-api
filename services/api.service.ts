@@ -3,8 +3,13 @@ import pick from 'lodash/pick';
 import moleculer, { Context, Errors } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import ApiGateway from 'moleculer-web';
-import { EndpointType, RequestMessage, throwUnauthorizedError, UserAuthMeta } from '../types';
-import { UserType } from './users.service';
+import {
+  EndpointType,
+  RequestMessage,
+  throwUnauthorizedError,
+  UserAuthMeta,
+  UserType,
+} from '../types';
 
 @Service({
   name: 'api',
