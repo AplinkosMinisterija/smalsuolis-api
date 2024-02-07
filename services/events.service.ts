@@ -62,7 +62,6 @@ export type Event<
       app: {
         type: 'number',
         columnType: 'integer',
-        hidden: 'byDefault',
         columnName: 'appId',
         populate: 'apps.resolve',
       },
