@@ -24,6 +24,7 @@ const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
 const USERS_DEFAULT_SCOPES = [...USERS_WITHOUT_AUTH_SCOPES, ...USERS_WITHOUT_NOT_ADMINS_SCOPE];
 
 export interface User extends CommonFields {
+  id: number;
   firstName: string;
   lastName: string;
   email: string;

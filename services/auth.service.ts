@@ -53,6 +53,10 @@ import { EndpointType, throwNotFoundError, UserAuthMeta, UserType } from '../typ
       auth: EndpointType.PUBLIC,
       rest: 'POST /change/accept',
     },
+    remindPassword: {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /change/remind',
+    },
   },
   hooks: {
     after: {
