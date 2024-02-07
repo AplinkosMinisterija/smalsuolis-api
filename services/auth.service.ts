@@ -26,6 +26,10 @@ import { EndpointType, throwNotFoundError, UserAuthMeta, UserType } from '../typ
         keys: [],
       },
     },
+    'users.logout': {
+      auth: EndpointType.PUBLIC,
+      rest: 'POST /logout',
+    },
     login: {
       auth: EndpointType.PUBLIC,
       rest: 'POST /login',

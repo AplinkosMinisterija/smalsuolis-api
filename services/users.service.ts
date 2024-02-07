@@ -175,6 +175,7 @@ export default class UsersService extends moleculer.Service {
     const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
 
     const inviteData = {
+      apps: [ctx.meta.app.id],
       firstName: ctx.params.firstName,
       lastName: ctx.params.lastName,
       email: ctx.params.email,
