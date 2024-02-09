@@ -35,7 +35,7 @@ export default class SeedService extends moleculer.Service {
     await this.broker.waitForServices(['apps']);
     const idsMap: Record<string, App['id']> = {};
 
-    for (const [key, name] of Object.entries(APPS)) {
+    for (const [key, data] of Object.entries(APPS)) {
       let app: App = await ctx.call('apps.findOne', {
         query: { key },
       });
@@ -43,7 +43,7 @@ export default class SeedService extends moleculer.Service {
       if (!app) {
         app = await ctx.call('apps.create', <Partial<App>>{
           key,
-          name,
+          ...data,
         });
       }
 
