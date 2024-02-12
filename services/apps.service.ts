@@ -15,11 +15,16 @@ export interface App extends CommonFields {
   name: string;
   key: string;
   apiKey: string;
-  type: string;
+  description: string;
+  icon: string;
 }
 
 export const APPS = {
-  infostatyba: 'Infostatyba',
+  infostatyba: {
+    name: 'Infostatyba',
+    description: 'Statybos leidimai, Užbaigimo deklaracijos',
+    icon: 'http://infostatyba.lt/wp-content/themes/infostatyba/img/favicon.ico',
+  },
 };
 
 @Service({
@@ -27,7 +32,6 @@ export const APPS = {
   mixins: [
     DbConnection({
       collection: 'apps',
-      rest: false,
     }),
   ],
   settings: {
@@ -40,6 +44,8 @@ export const APPS = {
       },
       key: 'string|required',
       name: 'string|required',
+      description: 'string|required',
+      icon: 'string|required',
       apiKey: {
         type: 'string',
         hidden: true,
