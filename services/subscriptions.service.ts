@@ -1,7 +1,7 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Method, Service } from 'moleculer-decorators';
+import { Action, Method, Service } from 'moleculer-decorators';
 import DbConnection from '../mixins/database.mixin';
 import {
   COMMON_DEFAULT_SCOPES,
@@ -19,6 +19,7 @@ import {
 import { User } from './users.service';
 import { App } from './apps.service';
 import PostgisMixin from 'moleculer-postgis';
+import Moleculer from 'moleculer';
 
 interface Fields extends CommonFields {
   user: User['id'];
@@ -86,7 +87,7 @@ export type Subscription<
       geom: {
         type: 'any',
         geom: true,
-        required: false, //TODO: should be true when map is ready
+        required: true,
       },
       frequency: {
         // email sending frequency
@@ -130,6 +131,23 @@ export type Subscription<
   },
 })
 export default class SubscriptionsService extends moleculer.Service {
+  @Action({
+    rest: 'POST /delete',
+    auth: EndpointType.USER,
+    params: {
+      ids: {
+        type: 'array',
+        items: 'number|integer|positive',
+      },
+    },
+  })
+  async deleteMany(ctx: Context<{ ids: number[] }, UserAuthMeta>) {
+    return this.removeEntities(ctx, {
+      query: {
+        id: { $in: ctx.params?.ids },
+      },
+    });
+  }
   @Method
   async validateApps({ ctx, value, entity }: FieldHookCallback) {
     const apps: App[] = await ctx.call('apps.find', {
