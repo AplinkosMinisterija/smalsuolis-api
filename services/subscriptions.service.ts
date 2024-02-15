@@ -19,7 +19,6 @@ import {
 import { User } from './users.service';
 import { App } from './apps.service';
 import PostgisMixin from 'moleculer-postgis';
-import Moleculer from 'moleculer';
 
 interface Fields extends CommonFields {
   user: User['id'];
@@ -122,10 +121,10 @@ export type Subscription<
     get: {
       auth: EndpointType.USER,
     },
-    remove: {
-      rest: null,
-    },
     count: {
+      auth: EndpointType.USER,
+    },
+    remove: {
       rest: null,
     },
   },
