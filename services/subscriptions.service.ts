@@ -148,7 +148,7 @@ export type Subscription<
       auth: EndpointType.USER,
     },
     list: {
-      auth: EndpointType.PUBLIC,
+      auth: EndpointType.USER,
     },
     find: {
       auth: EndpointType.USER,
