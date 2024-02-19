@@ -28,9 +28,9 @@ interface Fields extends CommonFields {
   user: User['id'];
   apps: number[];
   geom: FeatureCollection;
-  geomWithBuffer: FeatureCollection;
   frequency: Frequency;
   active: boolean;
+  geomWithBuffer?: FeatureCollection;
 }
 
 interface Populates extends CommonPopulates {
