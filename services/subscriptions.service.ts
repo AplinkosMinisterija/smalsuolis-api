@@ -246,7 +246,6 @@ export default class SubscriptionsService extends moleculer.Service {
       return acc;
     }, {});
 
-    if (!multi) return result[`${id}`];
     return result;
   }
 
