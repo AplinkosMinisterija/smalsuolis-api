@@ -21,12 +21,14 @@ import { App } from './apps.service';
 import PostgisMixin, { asGeoJsonQuery } from 'moleculer-postgis';
 import _ from 'lodash';
 import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
-import { parse } from 'geojsonjs';
+import { parse, FeatureCollection } from 'geojsonjs';
+import { LKS_SRID } from '../utils';
 
 interface Fields extends CommonFields {
   user: User['id'];
   apps: number[];
-  geom: any;
+  geom: FeatureCollection;
+  geomWithBuffer: FeatureCollection;
   frequency: Frequency;
   active: boolean;
 }
@@ -41,11 +43,9 @@ export type Subscription<
   F extends keyof (Fields & Populates) = keyof Fields,
 > = Table<Fields, Populates, P, F>;
 
-const SRID = 3346;
-
 @Service({
   name: 'subscriptions',
-  mixins: [DbConnection({ collection: 'subscriptions' }), PostgisMixin({ srid: SRID })],
+  mixins: [DbConnection({ collection: 'subscriptions' }), PostgisMixin({ srid: LKS_SRID })],
   settings: {
     fields: {
       id: {
@@ -225,7 +225,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const query = table.select(
       'id',
       table.client.raw(
-        asGeoJsonQuery(transformGeomQuery, 'geom', SRID, {
+        asGeoJsonQuery(transformGeomQuery, 'geom', LKS_SRID, {
           digits: 3,
           options: 0,
         }),
