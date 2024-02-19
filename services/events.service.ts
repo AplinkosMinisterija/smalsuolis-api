@@ -14,6 +14,7 @@ import {
   Table,
 } from '../types';
 import { App } from './apps.service';
+import { LKS_SRID } from '../utils';
 
 interface Fields extends CommonFields {
   app: number;
@@ -43,7 +44,7 @@ export type Event<
     DbConnection({
       collection: 'events',
     }),
-    PostgisMixin({ srid: 3346 }),
+    PostgisMixin({ srid: LKS_SRID }),
   ],
   settings: {
     fields: {

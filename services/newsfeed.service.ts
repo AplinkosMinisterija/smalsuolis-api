@@ -2,7 +2,13 @@
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Frequency, FrequencyLabel, QueryObject, UserAuthMeta } from '../types';
-import { parseToJsonIfNeeded, emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
+import {
+  parseToJsonIfNeeded,
+  emailCanBeSent,
+  getDateByFrequency,
+  truncateString,
+  LKS_SRID,
+} from '../utils';
 import { Subscription } from './subscriptions.service';
 import { Event } from './events.service';
 import { format } from 'date-fns/format';
@@ -23,7 +29,7 @@ function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[])
   }
   const subscriptionQuery = subscriptions.map((subscription) => ({
     ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-    $raw: intersectsQuery('geom', subscription.geom, 3346),
+    $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
   }));
   if (query?.$or) {
     query.$and = [query?.$or, { $or: subscriptionQuery }];
@@ -118,7 +124,7 @@ export default class NewsfeedService extends moleculer.Service {
         frequency,
         active: true,
       },
-      populate: 'user',
+      populate: ['user', 'geomWithBuffer'],
       scope: '-user',
     });
 
@@ -193,7 +199,7 @@ export default class NewsfeedService extends moleculer.Service {
         user: user.id,
         active: true,
       },
-      populate: ['geom'],
+      populate: ['geomWithBuffer'],
     });
 
     ctx.params.query = applyNewsfeedFilters(ctx.params.query, subscriptions);
