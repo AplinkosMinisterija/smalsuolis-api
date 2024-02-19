@@ -241,10 +241,10 @@ export default class SubscriptionsService extends moleculer.Service {
 
     if (!mapping) return res;
 
-    const result = res.reduce((acc: { [key: string]: any }, item) => {
-      acc[`${item.id}`] = item.geom;
-      return acc;
-    }, {});
+    const result = res.reduce(
+      (acc: { [key: string]: any }, item) => ({ ...acc, [`${item.id}`]: item.geom }),
+      {},
+    );
 
     return result;
   }
