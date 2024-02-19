@@ -86,9 +86,26 @@ export type Subscription<
       },
       geom: {
         type: 'any',
-        geom: true,
+        geom: {
+          type: 'geom',
+          properties: {
+            bufferSize: 'geomBufferSize',
+          },
+        },
         required: true,
       },
+
+      geomBufferSize: {
+        // radius in meters
+        type: 'number',
+        set({ params }: any) {
+          const bufferSizes = this._getPropertiesFromFeatureCollection(params.geom, 'bufferSize');
+          if (!bufferSizes || !bufferSizes?.length) return;
+          return bufferSizes[0] || 1000;
+        },
+        hidden: 'byDefault',
+      },
+
       frequency: {
         // email sending frequency
         type: 'enum',
@@ -99,7 +116,9 @@ export type Subscription<
     },
     scopes: {
       user(query: any, ctx: Context<null, UserAuthMeta>, params: any) {
-        query.user = ctx.meta.user?.id;
+        const { user } = ctx.meta;
+        if (!user?.id) return query;
+        query.user = user.id;
         return query;
       },
       ...COMMON_SCOPES,
