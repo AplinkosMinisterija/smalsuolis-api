@@ -156,10 +156,10 @@ export type Subscription<
     get: {
       auth: EndpointType.USER,
     },
-    remove: {
-      rest: null,
-    },
     count: {
+      auth: EndpointType.USER,
+    },
+    remove: {
       rest: null,
     },
   },
