@@ -100,7 +100,7 @@ export default class DatagovService extends moleculer.Service {
           continue;
         }
 
-        const matches = entry.taskas_lks.match(/\(([\d]*) ([\d]*)\)/);
+        const matches = entry.taskas_lks.match(/\(([\d]+(\.[\d]+)?) ([\d]+(\.[\d]+)?)\)/);
         let geom;
         if (matches?.length) {
           geom = parse({
