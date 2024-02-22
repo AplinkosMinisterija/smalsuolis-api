@@ -63,7 +63,7 @@ export default class DatagovService extends moleculer.Service {
       },
     };
 
-    const filter = [
+    const query = [
       'limit(100)',
       'sort(_id)',
       'dok_tipo_kodas="SRA"', // only Statybos leidimai and approved
@@ -74,7 +74,7 @@ export default class DatagovService extends moleculer.Service {
     ].join('&');
 
     const url =
-      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + filter;
+      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + query;
 
     let skipParamString = '';
     let response: any;
@@ -100,7 +100,7 @@ export default class DatagovService extends moleculer.Service {
           continue;
         }
 
-        const matches = entry.taskas_lks.match(/\(([\d]+(\.[\d]+)?) ([\d]+(\.[\d]+)?)\)/);
+        const matches = entry.taskas_lks.match(/\(([\d]+[\.[\d]+]?) ([\d]+[\.[\d]+]?)\)/);
         let geom;
         if (matches?.length) {
           geom = parse({
