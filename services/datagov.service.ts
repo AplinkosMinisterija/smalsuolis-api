@@ -60,31 +60,21 @@ export default class DatagovService extends moleculer.Service {
         total: 0,
         no_date: 0,
         no_geom: 0,
-        wrong_dok_type: 0,
       },
     };
 
-    const dokType = [
-      'SRA',
-      'ARCCR',
-      'RCCR',
-      'PNSSP',
-      'PNUR',
-      'ANN',
-      'PSR',
-      'PSP',
-      'BCPPA',
-      'LSNS',
-      'TLDR',
-      'BIPA',
-      'ISP',
-      'LRS',
-      'LAP',
-    ];
+    const filter = [
+      'limit(100)',
+      'sort(_id)',
+      'dok_tipo_kodas="SRA"', // only Statybos leidimai and approved
+      'dok_statusas="Patenkintas"',
+      'iraso_data!=null',
+      'taskas_wgs!=null',
+      'taskas_lks!=null',
+    ].join('&');
 
     const url =
-      this.settings.baseUrl +
-      '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?limit(1000)&sort(_id)';
+      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + filter;
 
     let skipParamString = '';
     let response: any;
@@ -107,12 +97,6 @@ export default class DatagovService extends moleculer.Service {
         if (!entry.iraso_data) {
           stats.invalid.total++;
           stats.invalid.no_date++;
-          continue;
-        }
-
-        if (!dokType.includes(entry.dok_tipo_kodas)) {
-          stats.invalid.total++;
-          stats.invalid.wrong_dok_type++;
           continue;
         }
 
