@@ -163,13 +163,6 @@ export type Subscription<
       rest: null,
     },
   },
-  hooks: {
-    after: {
-      create: ['subscriptionsChanged'],
-      update: ['subscriptionsChanged'],
-      remove: ['subscriptionsChanged'],
-    },
-  },
 })
 export default class SubscriptionsService extends moleculer.Service {
   @Action({
@@ -269,10 +262,5 @@ export default class SubscriptionsService extends moleculer.Service {
       return `Invalid app ids [${diff.toString()}]`;
     }
     return true;
-  }
-
-  @Method
-  async subscriptionsChanged() {
-    await this.broker.emit('cache.clean.subscriptions');
   }
 }

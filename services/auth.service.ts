@@ -165,7 +165,7 @@ export default class AuthService extends moleculer.Service {
   }
 
   @Event()
-  async 'cache.clean.subscriptions'() {
+  async 'subscriptions.*'() {
     await this.broker.cacher?.clean(`${this.fullName}.**`);
   }
 }
