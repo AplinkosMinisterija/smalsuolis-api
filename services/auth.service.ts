@@ -81,6 +81,7 @@ export default class AuthService extends moleculer.Service {
   })
   async me(ctx: Context<{}, UserAuthMeta>) {
     const { user, authUser } = ctx.meta;
+    const subscriptions = await ctx.call('subscriptions.find');
     const data: any = {
       id: user.id,
       firstName: user.firstName,
@@ -88,6 +89,7 @@ export default class AuthService extends moleculer.Service {
       email: user.email,
       phone: user.phone,
       type: user.type,
+      subscriptions,
     };
 
     if (authUser?.permissions?.SMALSUOLIS) {
