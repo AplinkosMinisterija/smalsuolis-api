@@ -81,7 +81,7 @@ export default class AuthService extends moleculer.Service {
   })
   async me(ctx: Context<{}, UserAuthMeta>) {
     const { user, authUser } = ctx.meta;
-    const subscriptions = await ctx.call('subscriptions.find');
+    const subscriptions = await ctx.call('subscriptions.count', { query: { active: true } });
     const data: any = {
       id: user.id,
       firstName: user.firstName,
@@ -161,6 +161,11 @@ export default class AuthService extends moleculer.Service {
 
   @Event()
   async 'cache.clean.auth'() {
+    await this.broker.cacher?.clean(`${this.fullName}.**`);
+  }
+
+  @Event()
+  async 'cache.clean.subscriptions'() {
     await this.broker.cacher?.clean(`${this.fullName}.**`);
   }
 }
