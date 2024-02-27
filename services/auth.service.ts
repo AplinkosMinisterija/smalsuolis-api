@@ -81,11 +81,13 @@ export default class AuthService extends moleculer.Service {
   })
   async me(ctx: Context<{}, UserAuthMeta>) {
     const { user, authUser } = ctx.meta;
+    const subscriptions = await ctx.call('subscriptions.count', { query: { active: true } });
     const data: any = {
       id: user.id,
       email: user.email,
       phone: user.phone,
       type: user.type,
+      subscriptions,
     };
 
     if (authUser?.permissions?.SMALSUOLIS) {
@@ -157,6 +159,11 @@ export default class AuthService extends moleculer.Service {
 
   @Event()
   async 'cache.clean.auth'() {
+    await this.broker.cacher?.clean(`${this.fullName}.**`);
+  }
+
+  @Event()
+  async 'subscriptions.*'() {
     await this.broker.cacher?.clean(`${this.fullName}.**`);
   }
 }
