@@ -83,8 +83,6 @@ export default class AuthService extends moleculer.Service {
     const { user, authUser } = ctx.meta;
     const data: any = {
       id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
       email: user.email,
       phone: user.phone,
       type: user.type,
