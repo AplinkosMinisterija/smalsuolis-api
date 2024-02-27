@@ -85,7 +85,6 @@ export default class AuthService extends moleculer.Service {
     const data: any = {
       id: user.id,
       email: user.email,
-      phone: user.phone,
       type: user.type,
       subscriptions,
     };
