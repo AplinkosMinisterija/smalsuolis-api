@@ -24,10 +24,7 @@ const USERS_WITHOUT_NOT_ADMINS_SCOPE = [`-${NOT_ADMINS_SCOPE}`];
 const USERS_DEFAULT_SCOPES = [...USERS_WITHOUT_AUTH_SCOPES, ...USERS_WITHOUT_NOT_ADMINS_SCOPE];
 
 export interface User extends CommonFields {
-  firstName: string;
-  lastName: string;
   email: string;
-  phone: string;
   type: UserType;
   authUser: number;
   isServer?: boolean;
@@ -48,10 +45,7 @@ export interface User extends CommonFields {
         primaryKey: true,
         secure: true,
       },
-      firstName: 'string',
-      lastName: 'string',
       email: 'string',
-      phone: 'string',
       type: {
         type: 'string',
         enum: Object.values(UserType),
@@ -106,9 +100,6 @@ export default class UsersService extends moleculer.Service {
     rest: 'PATCH /me',
     auth: EndpointType.USER,
     params: {
-      firstName: 'string|optional',
-      lastName: 'string|optional',
-      phone: 'string|optional',
       password: 'string|optional',
       oldPassword: 'string|optional',
     },
@@ -116,35 +107,20 @@ export default class UsersService extends moleculer.Service {
   async patchMe(
     ctx: Context<
       {
-        firstName?: string;
-        lastName?: string;
-        phone?: string;
         password?: string;
         oldPassword?: string;
       },
       UserAuthMeta
     >,
   ) {
-    const { firstName, lastName, phone, password, oldPassword } = ctx.params;
+    const { password, oldPassword } = ctx.params;
 
     if (password && oldPassword) {
       await ctx.call('auth.users.update', {
         id: ctx.meta.authUser.id,
-        firstName: firstName || ctx.meta.user.firstName,
-        lastName: lastName || ctx.meta.user.lastName,
-        phone: phone || ctx.meta.user.phone,
         unassignExistingGroups: true,
         password,
         oldPassword,
-      });
-    }
-
-    if (firstName || lastName || phone) {
-      return ctx.call('users.update', {
-        id: ctx.meta.user.id,
-        firstName,
-        lastName,
-        phone,
       });
     }
 
@@ -155,8 +131,6 @@ export default class UsersService extends moleculer.Service {
     rest: 'POST /',
     auth: EndpointType.PUBLIC,
     params: {
-      firstName: 'string',
-      lastName: 'string',
       phone: 'string|optional',
       email: 'string',
     },
@@ -164,9 +138,6 @@ export default class UsersService extends moleculer.Service {
   async invite(
     ctx: Context<
       {
-        firstName: string;
-        lastName: string;
-        phone?: string;
         email: string;
       },
       UserAuthMeta
@@ -176,10 +147,7 @@ export default class UsersService extends moleculer.Service {
 
     const inviteData = {
       apps: [ctx.meta.app.id],
-      firstName: ctx.params.firstName,
-      lastName: ctx.params.lastName,
       email: ctx.params.email,
-      phone: ctx.params.phone,
       groups: [{ id: authGroupId, role: 'USER' }],
       unassignExistingGroups: false,
     };
@@ -188,10 +156,7 @@ export default class UsersService extends moleculer.Service {
 
     const user: User = await ctx.call('users.findOrCreate', {
       authUser,
-      firstName: ctx.params.firstName,
-      lastName: ctx.params.lastName,
       email: ctx.params.email,
-      phone: ctx.params.phone,
     });
 
     if (authUser?.url) {
@@ -212,9 +177,7 @@ export default class UsersService extends moleculer.Service {
   })
   async impersonate(ctx: Context<{ id: number }, UserAuthMeta>) {
     const { id } = ctx.params;
-
     const user: User = await ctx.call('users.resolve', { id });
-
     return ctx.call('auth.users.impersonate', { id: user.authUser });
   }
 
@@ -230,7 +193,6 @@ export default class UsersService extends moleculer.Service {
     const user: User = await ctx.call('users.findOrCreate', {
       authUser: ctx.params.authUser,
     });
-
     return user;
   }
 
@@ -241,19 +203,7 @@ export default class UsersService extends moleculer.Service {
         type: 'boolean',
         default: false,
       },
-      firstName: {
-        type: 'string',
-        optional: true,
-      },
-      lastName: {
-        type: 'string',
-        optional: true,
-      },
       email: {
-        type: 'string',
-        optional: true,
-      },
-      phone: {
         type: 'string',
         optional: true,
       },
@@ -262,14 +212,11 @@ export default class UsersService extends moleculer.Service {
   async findOrCreate(
     ctx: Context<{
       authUser: any;
-      firstName?: string;
-      lastName?: string;
       email?: string;
-      phone?: string;
       update?: boolean;
     }>,
   ) {
-    const { authUser, update, firstName, lastName, email, phone } = ctx.params;
+    const { authUser, update, email } = ctx.params;
     if (!authUser || !authUser.id) return;
 
     const scope = [...USERS_WITHOUT_AUTH_SCOPES];
@@ -290,11 +237,8 @@ export default class UsersService extends moleculer.Service {
     if (!update && user && user.id) return user;
 
     const dataToSave = {
-      firstName: firstName || authUser.firstName,
-      lastName: lastName || authUser.lastName,
       type: authUserIsAdmin ? UserType.ADMIN : UserType.USER,
       email: email || authUser.email,
-      phone: phone || authUser.phone,
     };
 
     if (user?.id) {
@@ -305,12 +249,9 @@ export default class UsersService extends moleculer.Service {
       });
     }
 
-    // let user to customize his phone and email
+    // let user to customize his email
     if (user?.email) {
       delete dataToSave.email;
-    }
-    if (user?.phone) {
-      delete dataToSave.phone;
     }
 
     return ctx.call('users.create', {
@@ -341,7 +282,6 @@ export default class UsersService extends moleculer.Service {
         userId: id,
       });
     }
-
     return ctx.call('users.remove', { id });
   }
 
@@ -350,10 +290,6 @@ export default class UsersService extends moleculer.Service {
     params: {
       id: { type: 'number', convert: true },
       email: {
-        type: 'string',
-        optional: true,
-      },
-      phone: {
         type: 'string',
         optional: true,
       },
@@ -368,12 +304,11 @@ export default class UsersService extends moleculer.Service {
       {
         id: number;
         email: string;
-        phone: string;
       },
       UserAuthMeta
     >,
   ) {
-    const { id, email, phone } = ctx.params;
+    const { id, email } = ctx.params;
 
     const userToUpdate: User = await ctx.call('users.get', { id });
 
@@ -384,7 +319,6 @@ export default class UsersService extends moleculer.Service {
     return ctx.call('users.update', {
       id,
       email,
-      phone,
     });
   }
 
