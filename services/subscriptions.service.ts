@@ -30,6 +30,7 @@ interface Fields extends CommonFields {
   geom: FeatureCollection;
   frequency: Frequency;
   active: boolean;
+  futureApps: boolean;
   geomWithBuffer?: FeatureCollection;
 }
 
@@ -98,7 +99,6 @@ export type Subscription<
         },
         required: true,
       },
-
       geomBufferSize: {
         // radius in meters
         type: 'number',
@@ -109,7 +109,6 @@ export type Subscription<
         },
         hidden: 'byDefault',
       },
-
       geomWithBuffer: {
         virtual: true,
         populate: {
@@ -120,13 +119,13 @@ export type Subscription<
           },
         },
       },
-
       frequency: {
         // email sending frequency
         type: 'enum',
         values: Object.values(Frequency),
       },
       active: 'boolean', // is subscription active
+      futureApps: 'boolean',
       ...COMMON_FIELDS,
     },
     scopes: {
@@ -161,6 +160,14 @@ export type Subscription<
     },
     remove: {
       rest: null,
+    },
+  },
+  hooks: {
+    before: {
+      list: 'beforeSelect',
+      get: 'beforeSelect',
+      count: 'beforeSelect',
+      find: 'beforeSelect',
     },
   },
 })
@@ -262,5 +269,17 @@ export default class SubscriptionsService extends moleculer.Service {
       return `Invalid app ids [${diff.toString()}]`;
     }
     return true;
+  }
+  @Method
+  async beforeSelect(ctx: Context<any>) {
+    const subscriptions = await this.findEntities(ctx);
+    if (!subscriptions.length) return;
+    const apps: App[] = await ctx.call('apps.find');
+    if (!apps.length) return;
+    for (const sub of subscriptions) {
+      if (sub.futureApps && sub.apps.length !== apps.length) {
+        await this.updateEntity(ctx, { id: sub.id, apps: apps.map((app) => app.id) });
+      }
+    }
   }
 }
