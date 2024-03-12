@@ -9,5 +9,5 @@ export function throwNotFoundError(message?: string): Errors.MoleculerError {
 }
 
 export function throwNoRightsError(message?: string): Errors.MoleculerError {
-  throw new Moleculer.Errors.MoleculerClientError(message || `No rights.`, 401, 'NO_RIGHTS');
+  throw new Moleculer.Errors.MoleculerClientError(message || `No rights.`, 403, 'NO_RIGHTS');
 }

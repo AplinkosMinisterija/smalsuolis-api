@@ -23,6 +23,7 @@ import _ from 'lodash';
 import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
 import { parse, FeatureCollection } from 'geojsonjs';
 import { LKS_SRID } from '../utils';
+import Moleculer from 'moleculer';
 
 interface Fields extends CommonFields {
   user: User['id'];
@@ -160,29 +161,16 @@ export type Subscription<
       auth: EndpointType.USER,
     },
     remove: {
-      rest: null,
+      auth: EndpointType.USER,
+    },
+  },
+  hooks: {
+    before: {
+      remove: ['beforeRemove'],
     },
   },
 })
 export default class SubscriptionsService extends moleculer.Service {
-  @Action({
-    rest: 'POST /delete',
-    auth: EndpointType.USER,
-    params: {
-      ids: {
-        type: 'array',
-        items: 'number|integer|positive',
-      },
-    },
-  })
-  async deleteMany(ctx: Context<{ ids: number[] }, UserAuthMeta>) {
-    return this.removeEntities(ctx, {
-      query: {
-        id: { $in: ctx.params?.ids },
-      },
-    });
-  }
-
   @Action({
     params: {
       id: [
@@ -262,5 +250,13 @@ export default class SubscriptionsService extends moleculer.Service {
       return `Invalid app ids [${diff.toString()}]`;
     }
     return true;
+  }
+
+  @Method
+  async beforeRemove(ctx: Context<{ id: number }, UserAuthMeta>) {
+    const subscription = await this.findEntity(ctx, { id: ctx.params.id });
+    if (subscription?.user !== ctx.meta.user.id) {
+      throwNoRightsError();
+    }
   }
 }
