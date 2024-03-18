@@ -121,9 +121,9 @@ export default class DatagovService extends moleculer.Service {
           body: [
             `**Projekto pavadinimas:** ${entry.projekto_pavadinimas}`,
             `**Adresas:** ${entry.adresas}`,
-            `**Statinio kategorija:** ${entry.statinio_kategorija?.toLowerCase?.() || '-'}`,
-            `**Statybos rūšis:** ${entry.statybos_rusis?.toLowerCase?.() || '-'}`,
-            `**Statinio pavadinimas:** ${entry.statinio_pavadinimas?.toLowerCase?.() || '-'}`,
+            `**Statinio kategorija:** ${entry.statinio_kategorija || '-'}`,
+            `**Statybos rūšis:** ${entry.statybos_rusis || '-'}`,
+            `**Statinio pavadinimas:** ${entry.statinio_pavadinimas || '-'}`,
           ].join('\n\n'),
           startAt: new Date(entry.iraso_data),
           geom,
