@@ -1,7 +1,7 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Service } from 'moleculer-decorators';
+import { Action, Method, Service } from 'moleculer-decorators';
 import { Event } from './events.service';
 import { parse } from 'geojsonjs';
 import { App } from './apps.service';
@@ -43,10 +43,6 @@ export default class DatagovService extends moleculer.Service {
     },
   })
   async infostatyba(ctx: Context<{ limit: number }>) {
-    const app: App = await ctx.call('apps.findOne', {
-      query: { key: 'infostatyba' },
-    });
-
     const { limit } = ctx.params;
 
     const stats = {
@@ -63,15 +59,20 @@ export default class DatagovService extends moleculer.Service {
       },
     };
 
+    const { dokTypes, appIdByDokType } = await this.getInfostatybaDokTypesData(ctx);
+    const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
+
     const query = [
-      'limit(100)',
+      'limit(1000)',
       'sort(_id)',
-      'dok_tipo_kodas="SRA"', // only Statybos leidimai and approved
-      'dok_statusas="Patenkintas"',
+      `(${dokTipasQuery})`,
+      'dok_statusas="Galiojantis"',
       'iraso_data!=null',
       'taskas_wgs!=null',
       'taskas_lks!=null',
-    ].join('&');
+    ]
+      .map((i) => encodeURIComponent(i))
+      .join('&');
 
     const url =
       this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + query;
@@ -116,13 +117,17 @@ export default class DatagovService extends moleculer.Service {
         }
 
         const event: Partial<Event> = {
-          name: `${entry.dok_statusas} ${
-            entry.dokumento_kategorija.charAt(0).toLowerCase() + entry.dokumento_kategorija.slice(1)
-          }`,
-          body: entry.iraso_paaiskinimas,
+          name: entry.projekto_pavadinimas,
+          body: [
+            `**Projekto pavadinimas:** ${entry.projekto_pavadinimas}`,
+            `**Adresas:** ${entry.adresas}`,
+            `**Statinio kategorija:** ${entry.statinio_kategorija?.toLowerCase?.() || '-'}`,
+            `**Statybos rūšis:** ${entry.statybos_rusis?.toLowerCase?.() || '-'}`,
+            `**Statinio pavadinimas:** ${entry.statinio_pavadinimas?.toLowerCase?.() || '-'}`,
+          ].join('\n\n'),
           startAt: new Date(entry.iraso_data),
           geom,
-          app: app.id,
+          app: appIdByDokType[entry.dok_tipo_kodas],
           isFullDay: true,
           externalId: entry._id,
         };
@@ -153,5 +158,49 @@ export default class DatagovService extends moleculer.Service {
     } while (response?._data?.length);
 
     return stats;
+  }
+
+  @Method
+  async getInfostatybaDokTypesData(ctx: Context) {
+    const dokTypesByAppKey = {
+      'infostatyba-naujas': ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
+      'infostatyba-remontas': [
+        'LSKR',
+        'KRBES',
+        'LSPR',
+        'LRS',
+        'LAP',
+        'RLRTV',
+        'RLRIE',
+        'RLRKS',
+        'RSIYV',
+        'RBEOS',
+      ],
+      'infostatyba-griovimas': ['LGS', 'GBEOS'],
+      'infostatyba-paskirties-keitimas': ['LPSP'],
+    };
+
+    const appIdByKey: { [key: string]: App['id'] } = await ctx.call('apps.find', {
+      query: {
+        key: { $in: Object.keys(dokTypesByAppKey) },
+      },
+      mapping: 'key',
+      mappingField: 'id',
+    });
+
+    const appIdByDokType = Object.entries(dokTypesByAppKey).reduce(
+      (acc: any, [appKey, dokTypes]: any[]) => {
+        dokTypes?.forEach((dokType: string) => {
+          acc[dokType] = appIdByKey[appKey];
+        });
+        return acc;
+      },
+      {},
+    );
+
+    return {
+      dokTypes: Object.values(dokTypesByAppKey).flat(),
+      appIdByDokType,
+    };
   }
 }
