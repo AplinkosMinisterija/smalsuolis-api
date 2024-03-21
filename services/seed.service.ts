@@ -23,7 +23,7 @@ export default class SeedService extends moleculer.Service {
       }
     }
 
-    const apps: Record<string, App['id']> = await this.seedApps(ctx);
+    const apps: Record<string, App['id'][]> = await this.seedApps(ctx);
 
     await this.infostatyba(ctx, apps.infostatyba);
 
@@ -33,13 +33,15 @@ export default class SeedService extends moleculer.Service {
   @Method
   async seedApps(ctx: Context) {
     await this.broker.waitForServices(['apps']);
-    const idsMap: Record<string, App['id']> = {};
+    const idsMap: Record<string, App['id'][]> = {};
 
     for (const [key, data] of Object.entries(APPS)) {
       let app: App = await ctx.call('apps.findOne', {
         query: { key },
       });
 
+      const appType = data.type;
+      delete data.type; // App don't have this prop
       if (!app) {
         app = await ctx.call('apps.create', <Partial<App>>{
           key,
@@ -47,18 +49,19 @@ export default class SeedService extends moleculer.Service {
         });
       }
 
-      idsMap[key] = app.id;
+      // map by type
+      idsMap[appType] = [...(idsMap[appType] || []), app.id];
     }
 
     return idsMap;
   }
 
   @Method
-  async infostatyba(ctx: Context, app: App['id']) {
-    await this.broker.waitForServices(['datagov']);
+  async infostatyba(ctx: Context, appsIds: App['id'][]) {
+    await this.broker.waitForServices(['datagov', 'events']);
 
     const count: number = await ctx.call('events.count', {
-      query: { app },
+      query: { id: { $in: appsIds } },
     });
 
     if (!count) {
@@ -69,7 +72,9 @@ export default class SeedService extends moleculer.Service {
   @Action()
   async fake(ctx: Context<Record<string, unknown>>) {}
 
-  @Action()
+  @Action({
+    timeout: 0,
+  })
   run() {
     return this.broker.waitForServices(['auth', 'users']).then(async () => {
       await this.broker.call('seed.real', {}, { timeout: 120 * 1000 });
