@@ -10,10 +10,12 @@ import {
   UserAuthMeta,
   UserType,
 } from '../types';
+import DbPing from '../mixins/database.ping.mixin';
+import RedisPing from '../mixins/redis.ping.mixin';
 
 @Service({
   name: 'api',
-  mixins: [ApiGateway],
+  mixins: [ApiGateway, DbPing(), RedisPing()],
   // More info about settings: https://moleculer.services/docs/0.14/moleculer-web.html
   settings: {
     port: process.env.PORT || 3000,
@@ -112,7 +114,9 @@ export default class ApiService extends moleculer.Service {
   @Action({
     auth: EndpointType.PUBLIC,
   })
-  ping() {
+  async ping() {
+    await this.pingDb();
+    await this.pingRedis();
     return {
       timestamp: Date.now(),
     };
@@ -163,7 +167,11 @@ export default class ApiService extends moleculer.Service {
   ): Promise<unknown> {
     const actionAuthType = req.$action.auth;
     const auth = req.headers.authorization;
-    ctx.meta.app = await ctx.call('auth.apps.resolveToken');
+    try {
+      ctx.meta.app = await ctx.call('auth.apps.resolveToken');
+    } catch (e) {
+      // console.log('resolve token error', e)
+    }
 
     if (actionAuthType === EndpointType.PUBLIC && !auth) {
       return Promise.resolve(null);

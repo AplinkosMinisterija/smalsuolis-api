@@ -130,22 +130,26 @@ export default class AuthService extends moleculer.Service {
 
   @Method
   async afterUserLoggedIn(ctx: any, data: any) {
-    if (!data || !data.token) return data;
+    try {
+      if (!data || !data.token) return data;
 
-    const meta = { authToken: data.token };
+      const meta = { authToken: data.token };
 
-    const authUser: any = await this.broker.call('auth.users.resolveToken', null, { meta });
+      const authUser: any = await this.broker.call('auth.users.resolveToken', null, { meta });
 
-    const user: User = await ctx.call('users.findOrCreate', {
-      authUser: authUser,
-      update: true,
-    });
+      const user: User = await ctx.call('users.findOrCreate', {
+        authUser: authUser,
+        update: true,
+      });
 
-    if (user.type === UserType.ADMIN && process.env.NODE_ENV !== 'local') {
-      return throwNotFoundError();
+      if (user.type === UserType.ADMIN && process.env.NODE_ENV !== 'local') {
+        return throwNotFoundError();
+      }
+
+      return data;
+    } catch (e) {
+      console.log('afterUserLoggedIn error', e);
     }
-
-    return data;
   }
 
   @Method
