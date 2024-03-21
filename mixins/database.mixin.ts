@@ -156,17 +156,6 @@ export default function (opts: any = {}) {
 
         return ctx;
       },
-
-      async pingDb(ctx: Context, name: string) {
-        const adapter = await this.getAdapter(ctx);
-        const knex = adapter.client;
-        const result = await knex.raw('SELECT 1');
-        console.log('result!!!', result.rows[0]);
-        if (result !== 1) {
-          throw new moleculer.Errors.ServiceNotAvailableError('NOT AVAILABLE');
-        }
-        return result;
-      },
     },
 
     hooks: {
