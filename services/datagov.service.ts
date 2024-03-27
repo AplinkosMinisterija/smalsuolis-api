@@ -67,7 +67,7 @@ export default class DatagovService extends moleculer.Service {
       'sort(_id)',
       `(${dokTipasQuery})`,
       'dok_statusas="Galiojantis"',
-      'iraso_data!=null',
+      'dokumento_reg_data!=null',
       'taskas_wgs!=null',
       'taskas_lks!=null',
     ]
@@ -95,7 +95,7 @@ export default class DatagovService extends moleculer.Service {
         skipParamString = `&_id>'${entry._id}'`;
         stats.total++;
 
-        if (!entry.iraso_data) {
+        if (!entry.dokumento_reg_data) {
           stats.invalid.total++;
           stats.invalid.no_date++;
           continue;
@@ -125,7 +125,7 @@ export default class DatagovService extends moleculer.Service {
             `**Statybos rūšis:** ${entry.statybos_rusis || '-'}`,
             `**Statinio pavadinimas:** ${entry.statinio_pavadinimas || '-'}`,
           ].join('\n\n'),
-          startAt: new Date(entry.iraso_data),
+          startAt: new Date(entry.dokumento_reg_data),
           geom,
           app: appIdByDokType[entry.dok_tipo_kodas],
           isFullDay: true,
