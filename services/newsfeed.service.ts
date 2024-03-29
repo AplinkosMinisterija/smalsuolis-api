@@ -19,7 +19,7 @@ import { intersectsQuery } from 'moleculer-postgis';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
-const sender = 'noreply@biip.lt';
+const sender = 'esu@smalsuolis.lt';
 
 // returns query with apps and geom filtering based on provided subscriptions.
 function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[]) {
