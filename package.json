@@ -28,6 +28,7 @@
     "@types/lodash": "^4.14.178",
     "@types/node": "^20.4.5",
     "@types/qs": "^6.9.7",
+    "@types/showdown": "^2.0.6",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.8.0",
@@ -67,6 +68,7 @@
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "postmark": "^4.0.2",
+    "showdown": "^2.1.0",
     "typescript": "5.0.2"
   },
   "engines": {

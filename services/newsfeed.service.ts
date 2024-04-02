@@ -16,6 +16,7 @@ import { lt } from 'date-fns/locale';
 import { ServerClient } from 'postmark';
 import { User } from './users.service';
 import { intersectsQuery } from 'moleculer-postgis';
+import showdown from 'showdown';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
@@ -146,6 +147,9 @@ export default class NewsfeedService extends moleculer.Service {
       },
       {},
     );
+
+    const markdownConverter = new showdown.Converter();
+
     // for each user
     for (const key in subscriptionsMap) {
       const data = subscriptionsMap[key];
@@ -171,7 +175,7 @@ export default class NewsfeedService extends moleculer.Service {
         date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
           locale: lt,
         }),
-        event_content: truncateString(e.body, 500),
+        event_content: markdownConverter.makeHtml(truncateString(e.body, 500)),
         url: e.url,
       }));
       const content = {
@@ -182,7 +186,7 @@ export default class NewsfeedService extends moleculer.Service {
           frequency: FrequencyLabel[frequency],
           total_events: events.length,
           events: mappedEvents,
-          action_url: 'https://smalsuolis.lt', //TODO: replace with the actual link
+          action_url: process.env.APP_HOST, //TODO: replace with the actual link
         },
       };
       await this.client.sendEmailWithTemplate(content);
