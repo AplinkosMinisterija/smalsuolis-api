@@ -117,11 +117,9 @@ export type Subscription<
           return Promise.all(
             subscriptions.map((subscription: Subscription) => {
               return ctx.call('events.count', {
-                id: {
-                  ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-                  startAt: { $gt: getDateByFrequency(subscription.frequency) },
-                  $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
-                },
+                ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+                startAt: { $gt: getDateByFrequency(subscription.frequency) },
+                $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
               });
             }),
           );
