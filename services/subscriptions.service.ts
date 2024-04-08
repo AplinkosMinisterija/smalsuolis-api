@@ -1,14 +1,18 @@
 'use strict';
 
+import { FeatureCollection, parse } from 'geojsonjs';
+import _ from 'lodash';
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
+import PostgisMixin, { asGeoJsonQuery, intersectsQuery } from 'moleculer-postgis';
+import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
 import DbConnection from '../mixins/database.mixin';
 import {
+  CommonFields,
+  CommonPopulates,
   COMMON_DEFAULT_SCOPES,
   COMMON_FIELDS,
   COMMON_SCOPES,
-  CommonFields,
-  CommonPopulates,
   EndpointType,
   FieldHookCallback,
   Frequency,
@@ -16,14 +20,9 @@ import {
   throwNoRightsError,
   UserAuthMeta,
 } from '../types';
-import { User } from './users.service';
+import { getDateByFrequency, LKS_SRID } from '../utils';
 import { App } from './apps.service';
-import PostgisMixin, { asGeoJsonQuery } from 'moleculer-postgis';
-import _ from 'lodash';
-import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
-import { parse, FeatureCollection } from 'geojsonjs';
-import { LKS_SRID } from '../utils';
-import Moleculer from 'moleculer';
+import { User } from './users.service';
 
 interface Fields extends CommonFields {
   user: User['id'];
@@ -109,6 +108,24 @@ export type Subscription<
           return bufferSizes[0] || 1000;
         },
         hidden: 'byDefault',
+      },
+
+      eventsCount: {
+        virtual: true,
+        type: 'number',
+        async populate(ctx: any, _values: any, subscriptions: Subscription[]) {
+          return Promise.all(
+            subscriptions.map((subscription: Subscription) => {
+              return ctx.call('events.count', {
+                id: {
+                  ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+                  startAt: { $gt: getDateByFrequency(subscription.frequency) },
+                  $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
+                },
+              });
+            }),
+          );
+        },
       },
 
       geomWithBuffer: {
