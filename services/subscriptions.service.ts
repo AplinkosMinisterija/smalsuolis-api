@@ -113,13 +113,19 @@ export type Subscription<
       eventsCount: {
         virtual: true,
         type: 'number',
-        async populate(ctx: any, _values: any, subscriptions: Subscription[]) {
+        async populate(ctx: any, _values: any) {
+          const subscriptions: Subscription[] = await this.findEntities(ctx, {
+            populate: 'geomWithBuffer',
+          });
+
           return Promise.all(
             subscriptions.map((subscription: Subscription) => {
               return ctx.call('events.count', {
-                ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-                startAt: { $gt: getDateByFrequency(subscription.frequency) },
-                $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
+                query: {
+                  ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+                  startAt: { $gt: getDateByFrequency(subscription.frequency) },
+                  $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
+                },
               });
             }),
           );
