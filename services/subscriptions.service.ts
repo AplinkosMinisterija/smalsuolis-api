@@ -22,6 +22,7 @@ import {
 } from '../types';
 import { getDateByFrequency, LKS_SRID } from '../utils';
 import { App } from './apps.service';
+import { Event } from './events.service';
 import { User } from './users.service';
 
 interface Fields extends CommonFields {
@@ -119,14 +120,21 @@ export type Subscription<
           });
 
           return Promise.all(
-            subscriptions.map((subscription: Subscription) => {
-              return ctx.call('events.count', {
-                query: {
-                  ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-                  startAt: { $gt: getDateByFrequency(subscription.frequency) },
-                  $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
-                },
+            subscriptions.map(async (subscription: Subscription) => {
+              const query = {
+                ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
+                $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
+              };
+
+              const total = await ctx.call('events.find', {
+                query,
               });
+
+              const latest = total.filter(
+                (event: Event) => event.startAt > getDateByFrequency(subscription.frequency),
+              );
+
+              return { total: total.length, latest: latest.length };
             }),
           );
         },
