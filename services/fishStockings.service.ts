@@ -11,6 +11,8 @@ import Cron from '@r2d2bzh/moleculer-cron';
 const StatusLabels = {
   FINISHED: 'Įžuvinta',
   INSPECTED: 'Patikrinta',
+  ONGOING: 'Vyksta dabar',
+  UPCOMING: 'Suplanuota',
 };
 
 interface FishStocking {
@@ -40,7 +42,7 @@ interface FishStocking {
       label: 'Trivasariai';
     };
   }[];
-  status: 'FINISHED' | 'INSPECTED';
+  status: 'FINISHED' | 'INSPECTED' | 'UPCOMING' | 'ONGOING';
   coordinates: { x: number; y: number };
   geom: any;
 }
@@ -97,7 +99,7 @@ export default class FishStockingsService extends moleculer.Service {
     if (app?.length) {
       const url =
         this.settings.baseUrl +
-        `/api/public/fishStockings?filter={"status":["FINISHED","INSPECTED"]}&sort=-reviewTime&limit=${ctx.params.limit}`;
+        `/api/public/fishStockings?filter={"status":["FINISHED","INSPECTED","UPCOMING","ONGOING"]}&sort=-eventTime&limit=${ctx.params.limit}`;
 
       const response: FishStocking[] = await ctx.call(
         'http.get',
@@ -122,16 +124,18 @@ export default class FishStockingsService extends moleculer.Service {
           body: [
             `**Būsena:** ${StatusLabels[entry.status] || ''}`,
             `**Žuvys:** `,
-            entry.batches?.map((batch) => {
+            ...entry.batches?.map((batch) => {
               const fishType = batch.fishType.label;
               const fishName = fishType.charAt(0).toUpperCase() + fishType.slice(1);
-              return `${fishName} (${batch.fishAge.label.toLowerCase()}) ${batch.reviewAmount}vnt.`;
+              return `${fishName} (${batch.fishAge.label.toLowerCase()}) ${
+                batch.reviewAmount || batch.amount
+              }vnt.`;
             }),
           ].join('\n\n'),
           startAt: new Date(entry.eventTime),
           geom: entry.geom,
           app: app[0].id,
-          isFullDay: true,
+          isFullDay: false,
           externalId: entry.id?.toString(),
         };
 
