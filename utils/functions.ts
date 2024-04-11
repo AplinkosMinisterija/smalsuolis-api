@@ -1,7 +1,4 @@
 import { Frequency, QueryObject } from '../types';
-import { Subscription } from '../services/subscriptions.service';
-import { intersectsQuery } from 'moleculer-postgis';
-
 export function parseToJsonIfNeeded(query: QueryObject | string): QueryObject {
   if (!query) return;
 

@@ -2,7 +2,40 @@
 
 import moleculer, { Context, ServiceBroker } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { APPS, App } from './apps.service';
+import { App } from './apps.service';
+
+export const APPS = {
+  'infostatyba-naujas': {
+    type: 'infostatyba',
+    name: 'Statinio statyba',
+    description: 'Naujų statinių statybos leidimai',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
+  },
+  'infostatyba-remontas': {
+    type: 'infostatyba',
+    name: 'Statinio remontas/rekonstravimas',
+    description: 'Statinių kapitalinių ir paprastųjų remontų arba rekonstravimų leidimai',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
+  },
+  'infostatyba-griovimas': {
+    type: 'infostatyba',
+    name: 'Statinio griovimas',
+    description: 'Statinių griovimo leidimai',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
+  },
+  'infostatyba-paskirties-keitimas': {
+    type: 'infostatyba',
+    name: 'Statinio/patalpų paskirties keitimas',
+    description: 'Statinių/patalpų paskirties keitimų leidimai - statybos darbai neatliekami',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
+  },
+  izuvinimas: {
+    type: 'izuvinimas',
+    name: 'Žuvų įveisimas',
+    description: 'Įžuvinimų informacinė sistema',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 16C2 16 11 1 22 12C11 23 2 8 2 8" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  },
+};
 
 @Service({
   name: 'seed',
@@ -24,9 +57,8 @@ export default class SeedService extends moleculer.Service {
     }
 
     const apps: Record<string, App['id'][]> = await this.seedApps(ctx);
-
     await this.infostatyba(ctx, apps.infostatyba);
-
+    await this.fishStockings(ctx, apps.izuvinimas);
     return true;
   }
 
@@ -61,11 +93,24 @@ export default class SeedService extends moleculer.Service {
     await this.broker.waitForServices(['datagov', 'events']);
 
     const count: number = await ctx.call('events.count', {
-      query: { id: { $in: appsIds } },
+      query: { app: { $in: appsIds } },
     });
 
     if (!count) {
       await ctx.call('datagov.infostatyba', { limit: 100 });
+    }
+  }
+
+  @Method
+  async fishStockings(ctx: Context, appsIds: App['id'][]) {
+    await this.broker.waitForServices(['fishStockings', 'events']);
+
+    const count: number = await ctx.call('events.count', {
+      query: { app: { $in: appsIds } },
+    });
+
+    if (!count) {
+      await ctx.call('fishStockings.getData', { limit: 100 });
     }
   }
 
