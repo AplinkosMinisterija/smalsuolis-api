@@ -5,7 +5,7 @@ import { Action, Method, Service } from 'moleculer-decorators';
 import { App, APP_TYPES } from './apps.service';
 import { DATAGOV_APPS } from './datagov.service';
 
-export const APPS = {
+const APPS = {
   [DATAGOV_APPS.naujas]: {
     type: APP_TYPES.infostatyba,
     name: 'Statinio statyba',
