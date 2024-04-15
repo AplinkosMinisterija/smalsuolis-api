@@ -136,7 +136,7 @@ export default class FishStockingsService extends moleculer.Service {
               const fishName = fishType.charAt(0).toUpperCase() + fishType.slice(1);
               return `${fishName} (${batch.fishAge.label.toLowerCase()}) ${
                 batch.reviewAmount || batch.amount
-              }vnt.`;
+              } vnt.`;
             }),
           ].join('\n\n'),
           startAt: new Date(entry.eventTime),
