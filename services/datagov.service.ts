@@ -9,6 +9,13 @@ import { App } from './apps.service';
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 
+export enum DATAGOV_APPS {
+  naujas = 'infostatyba-naujas',
+  remontas = 'infostatyba-remontas',
+  griovimas = 'infostatyba-griovimas',
+  paskirties_keitimas = 'infostatyba-paskirties-keitimas',
+}
+
 @Service({
   name: 'datagov',
   settings: {
@@ -163,8 +170,8 @@ export default class DatagovService extends moleculer.Service {
   @Method
   async getInfostatybaDokTypesData(ctx: Context) {
     const dokTypesByAppKey = {
-      'infostatyba-naujas': ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
-      'infostatyba-remontas': [
+      [DATAGOV_APPS.naujas]: ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
+      [DATAGOV_APPS.remontas]: [
         'LSKR',
         'KRBES',
         'LSPR',
@@ -176,8 +183,8 @@ export default class DatagovService extends moleculer.Service {
         'RSIYV',
         'RBEOS',
       ],
-      'infostatyba-griovimas': ['LGS', 'GBEOS'],
-      'infostatyba-paskirties-keitimas': ['LPSP'],
+      [DATAGOV_APPS.griovimas]: ['LGS', 'GBEOS'],
+      [DATAGOV_APPS.paskirties_keitimas]: ['LPSP'],
     };
 
     const appIdByKey: { [key: string]: App['id'] } = await ctx.call('apps.find', {

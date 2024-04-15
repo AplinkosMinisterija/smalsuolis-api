@@ -11,6 +11,11 @@ import {
   CommonFields,
 } from '../types';
 
+export enum APP_TYPES {
+  infostatyba = 'infostatyba',
+  izuvinimas = 'izuvinimas',
+}
+
 export interface App extends CommonFields {
   name: string;
   key: string;
