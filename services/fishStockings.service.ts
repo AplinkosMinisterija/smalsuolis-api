@@ -90,16 +90,23 @@ export default class FishStockingsService extends moleculer.Service {
       },
     };
 
-    const app: App[] = await ctx.call('apps.find', {
+    const app: App = await ctx.call('apps.findOne', {
       query: {
         key: 'izuvinimas',
       },
     });
 
-    if (app?.length) {
+    if (app?.id) {
       const url =
         this.settings.baseUrl +
-        `/api/public/fishStockings?filter={"status":["FINISHED","INSPECTED","UPCOMING","ONGOING"]}&sort=-eventTime&limit=${ctx.params.limit}`;
+        '/api/public/fishStockings?' +
+        new URLSearchParams({
+          filter: JSON.stringify({
+            status: ['FINISHED', 'INSPECTED', 'UPCOMING', 'ONGOING'],
+          }),
+          sort: '-eventTime',
+          limit: ctx.params.limit.toString(),
+        });
 
       const response: FishStocking[] = await ctx.call(
         'http.get',
@@ -134,20 +141,20 @@ export default class FishStockingsService extends moleculer.Service {
           ].join('\n\n'),
           startAt: new Date(entry.eventTime),
           geom: entry.geom,
-          app: app[0].id,
+          app: app.id,
           isFullDay: false,
           externalId: entry.id?.toString(),
         };
 
-        const existingEvent: Event[] = await ctx.call('events.find', {
+        const existingEvent: Event = await ctx.call('events.findOne', {
           query: {
             externalId: entry.id,
           },
         });
 
-        if (existingEvent.length) {
+        if (existingEvent?.id) {
           await ctx.call('events.update', {
-            id: Number(existingEvent[0].id),
+            id: Number(existingEvent.id),
             ...event,
           });
           stats.valid.total++;
@@ -161,7 +168,7 @@ export default class FishStockingsService extends moleculer.Service {
 
       const invalidEvents: Event[] = await ctx.call('events.find', {
         query: {
-          app: app[0].id,
+          app: app.id,
           externalId: { $nin: ids },
         },
       });
