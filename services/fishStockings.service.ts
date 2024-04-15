@@ -34,11 +34,11 @@ interface FishStocking {
     reviewAmount: 111;
     reviewWeight: 123;
     fishType: {
-      id: 4;
+      id: number;
       label: 'karosai, sidabriniai';
     };
     fishAge: {
-      id: 8;
+      id: number;
       label: 'Trivasariai';
     };
   }[];
