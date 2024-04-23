@@ -15,5 +15,5 @@ jobs:
     with:
       environment: production
       runs-on: biip-workflows
-      # enable-sentry: true
+      enable-sentry: true
       docker-image: ghcr.io/AplinkosMinisterija/smalsuolis-api
