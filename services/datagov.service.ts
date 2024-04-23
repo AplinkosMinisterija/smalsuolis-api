@@ -117,7 +117,7 @@ export default class DatagovService extends moleculer.Service {
         }
 
         const event: Partial<Event> = {
-          name: entry.projekto_pavadinimas,
+          name: `${entry.statinio_pavadinimas}, ${entry.adresas}`,
           body: [
             `**Projekto pavadinimas:** ${entry.projekto_pavadinimas}`,
             `**Adresas:** ${entry.adresas}`,
