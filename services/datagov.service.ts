@@ -70,6 +70,7 @@ export default class DatagovService extends moleculer.Service {
       'dokumento_reg_data!=null',
       'taskas_wgs!=null',
       'taskas_lks!=null',
+      'dokumento_reg_data>"2021-11-01"',
     ]
       .map((i) => encodeURIComponent(i))
       .join('&');
