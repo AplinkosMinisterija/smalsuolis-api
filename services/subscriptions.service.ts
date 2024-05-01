@@ -25,6 +25,7 @@ import { App } from './apps.service';
 import { User } from './users.service';
 
 interface Fields extends CommonFields {
+  name: string;
   user: User['id'];
   apps: number[];
   geom: FeatureCollection;
@@ -54,6 +55,7 @@ export type Subscription<
         primaryKey: true,
         secure: true,
       },
+      name: 'string|required',
       user: {
         //subscriber
         type: 'number',
