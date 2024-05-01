@@ -125,8 +125,10 @@ export type Subscription<
         virtual: true,
         populate: {
           keyField: 'id',
-          handler: (ctx: Context, values: any[]) =>
-            ctx.call('subscriptions.getEventsCount', { id: values, mapping: true }),
+          handler: (ctx: Context, values: any[]) => {
+            if (!values?.length) return;
+            return ctx.call('subscriptions.getEventsCount', { id: values, mapping: true });
+          },
         },
       },
 
