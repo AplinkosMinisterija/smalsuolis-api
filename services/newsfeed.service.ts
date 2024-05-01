@@ -134,15 +134,35 @@ export default class NewsfeedService extends moleculer.Service {
       if (!events.length) {
         continue;
       }
+
+      function formatDateByEvent(e: Event<'app'>) {
+        const dayFormat = "yyyy 'm.' MMMM d 'd.'";
+        const dayAndTimeFormat = `${dayFormat} HH:mm`;
+
+        const startDate = e.startAt
+          ? format(new Date(e.startAt), e.isFullDay ? dayFormat : dayAndTimeFormat, {
+              locale: lt,
+            })
+          : '';
+
+        const endDate = e.endAt
+          ? format(new Date(e.endAt), e.isFullDay ? dayFormat : dayAndTimeFormat, {
+              locale: lt,
+            })
+          : '';
+
+        if (!startDate) return '';
+        else if (!endDate) return startDate;
+        return `${startDate} - ${endDate}`;
+      }
+
       // otherwise send email
       const mappedEvents = events.slice(0, 6).map((e) => ({
         app_name: e.app.name,
         event_name: e.name,
-        date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
-          locale: lt,
-        }),
+        date: formatDateByEvent(e),
         event_content: markdownConverter.makeHtml(truncateString(e.body, 500)),
-        url: e.url,
+        url: e.url || `${process.env.APP_HOST}/visos-naujienos/${e.id}`,
       }));
       const content = {
         From: sender,
@@ -152,7 +172,7 @@ export default class NewsfeedService extends moleculer.Service {
           frequency: FrequencyLabel[frequency],
           total_events: events.length,
           events: mappedEvents,
-          action_url: process.env.APP_HOST, //TODO: replace with the actual link
+          action_url: `${process.env.APP_HOST}/mano-naujienos`,
         },
       };
       await this.client.sendEmailWithTemplate(content);
