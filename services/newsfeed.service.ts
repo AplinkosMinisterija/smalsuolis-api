@@ -172,6 +172,7 @@ export default class NewsfeedService extends moleculer.Service {
     // we need to filter subscriptions in the first place
     if (ctx.params.query.subscription) {
       query.id = ctx.params.query.subscription;
+      delete ctx.params.query.subscription;
     }
 
     const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
