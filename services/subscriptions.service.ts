@@ -337,6 +337,10 @@ export default class SubscriptionsService extends moleculer.Service {
       );
     }
 
+    if (!Array.isArray(id)) {
+      return countBySubscriptions.find((i) => i.id == id);
+    }
+
     return countBySubscriptions;
   }
 
