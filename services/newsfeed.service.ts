@@ -182,6 +182,7 @@ export default class NewsfeedService extends moleculer.Service {
     if (!subscriptions?.length) {
       // TODO: hack for returning 0 items
       ctx.params.query.$or = { app: { $in: [] } };
+      return ctx;
     }
 
     ctx.params.query.subscription = {
