@@ -2,7 +2,7 @@
 
 import { FeatureCollection, parse } from 'geojsonjs';
 import _ from 'lodash';
-import moleculer, { Context } from 'moleculer';
+import moleculer, { Context, GenericObject } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import PostgisMixin, { asGeoJsonQuery, intersectsQuery } from 'moleculer-postgis';
 import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
@@ -20,9 +20,8 @@ import {
   throwNoRightsError,
   UserAuthMeta,
 } from '../types';
-import { getDateByFrequency, LKS_SRID } from '../utils';
+import { LKS_SRID } from '../utils';
 import { App } from './apps.service';
-import { Event } from './events.service';
 import { User } from './users.service';
 
 interface Fields extends CommonFields {
@@ -109,35 +108,6 @@ export type Subscription<
           return bufferSizes[0] || 1000;
         },
         hidden: 'byDefault',
-      },
-
-      eventsCount: {
-        virtual: true,
-        type: 'number',
-        async populate(ctx: any, _values: any) {
-          const subscriptions: Subscription[] = await this.findEntities(ctx, {
-            populate: 'geomWithBuffer',
-          });
-
-          return Promise.all(
-            subscriptions.map(async (subscription: Subscription) => {
-              const query = {
-                ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-                $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
-              };
-
-              const total = await ctx.call('events.find', {
-                query,
-              });
-
-              const latest = total.filter(
-                (event: Event) => event.startAt > getDateByFrequency(subscription.frequency),
-              );
-
-              return { total: total.length, latest: latest.length };
-            }),
-          );
-        },
       },
 
       geomWithBuffer: {
@@ -264,6 +234,110 @@ export default class SubscriptionsService extends moleculer.Service {
     );
 
     return result;
+  }
+
+  @Action({
+    rest: 'GET /:id/events/count',
+    params: {
+      id: ['number|convert', { type: 'array', items: 'number|convert' }],
+      mapping: 'boolean|optional',
+    },
+  })
+  async getEventsCount(ctx: Context<{ id: number | number[]; mapping?: boolean }>) {
+    const { id, mapping } = ctx.params;
+    const ids = Array.isArray(id) ? id : [id];
+
+    await ctx.call('subscriptions.resolve', { id: ids, throwIfNotExist: true });
+
+    const adapter = await this.getAdapter(ctx);
+
+    const knex = adapter.client;
+
+    const convertedSubscriptions = knex
+      .select(
+        'id',
+        knex.raw(`
+          ST_Transform(
+            ST_Multi(
+              CASE
+                WHEN ST_GeometryType(geom) IN (
+                  'ST_Point',
+                  'ST_LineString',
+                  'ST_MultiPoint',
+                  'ST_MultiLineString'
+                ) THEN ST_Buffer(geom, geom_buffer_size)
+                WHEN ST_GeometryType(geom) IN ('ST_Polygon', 'ST_MultiPolygon') THEN geom
+              END
+            ),
+            3346
+          ) :: geometry(multipolygon, 3346) AS geom
+        `),
+        'apps',
+        'frequency',
+      )
+      .from('subscriptions');
+
+    const countBySubscriptionsQuery = knex
+      .select(
+        's.id',
+        knex.raw('count(e.id)::integer as all_time'),
+        knex.raw(`
+          COUNT(
+            CASE
+              WHEN e.created_at >= (
+                CURRENT_DATE AT TIME ZONE 'UTC' - (
+                  SELECT
+                    CASE
+                      WHEN s.frequency = 'DAY' THEN INTERVAL '1 day'
+                      WHEN s.frequency = 'WEEK' THEN INTERVAL '1 week'
+                      WHEN s.frequency = 'MONTH' THEN INTERVAL '1 month'
+                    END
+                )
+              ) THEN 1
+              ELSE NULL
+            END
+          )::integer as new
+      `),
+      )
+      .from(convertedSubscriptions.as('s'))
+      .leftJoin('events as e', function () {
+        this.on(
+          knex.raw(`
+            ST_Intersects(s.geom, ST_Centroid(e.geom))
+        `),
+        ).andOn(
+          knex.raw(`
+          CASE
+            WHEN jsonb_array_length(s.apps) > 0 THEN e.app_id IN (
+              SELECT
+                jsonb_array_elements_text(s.apps) :: integer
+            )
+            ELSE TRUE
+          END
+          `),
+        );
+      })
+      .groupBy('s.id');
+
+    if (ids?.length) {
+      convertedSubscriptions.whereIn('id', ids);
+    }
+
+    const countBySubscriptions: any[] = await countBySubscriptionsQuery;
+    if (mapping) {
+      return countBySubscriptions.reduce(
+        (acc: GenericObject, item) => ({
+          ...acc,
+          [item.id]: {
+            allTime: item.allTime,
+            new: item.new,
+          },
+        }),
+        {},
+      );
+    }
+
+    return countBySubscriptions;
   }
 
   @Method
