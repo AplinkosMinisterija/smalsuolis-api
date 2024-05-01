@@ -129,13 +129,12 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
         ids.push(entry.id);
 
         const fishesNames = entry.batches
-          ?.map((batch) => {
-            const fishType = batch.fishType.label;
-            const fishName = fishType.charAt(0).toUpperCase() + fishType.slice(1);
-            return `${fishName.toLowerCase()} (${batch.fishAge.label.toLowerCase()}) ${
-              batch.reviewAmount || batch.amount
-            } vnt.`;
-          })
+          ?.map(
+            (batch) =>
+              `${batch.fishType.label} (${batch.fishAge.label.toLowerCase()}) ${
+                batch.reviewAmount || batch.amount
+              } vnt.`,
+          )
           .join(', ');
         const transform = transformation('EPSG:4326', '3346');
         const transformedCoordinates = transform.forward([
