@@ -164,11 +164,18 @@ export default class NewsfeedService extends moleculer.Service {
     ctx.params.query = parseToJsonIfNeeded(ctx.params.query) || {};
     const { user } = ctx.meta;
 
+    const query: any = {
+      user: user.id,
+      active: true,
+    };
+
+    // we need to filter subscriptions in the first place
+    if (ctx.params.query.subscription) {
+      query.id = ctx.params.query.subscription;
+    }
+
     const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
-      query: {
-        user: user.id,
-        active: true,
-      },
+      query,
       fields: ['id'],
     });
 
