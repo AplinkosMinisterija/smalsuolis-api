@@ -1,45 +1,19 @@
 'use strict';
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { Frequency, FrequencyLabel, QueryObject, UserAuthMeta } from '../types';
-import {
-  parseToJsonIfNeeded,
-  emailCanBeSent,
-  getDateByFrequency,
-  truncateString,
-  LKS_SRID,
-} from '../utils';
+import { Frequency, FrequencyLabel, UserAuthMeta } from '../types';
+import { parseToJsonIfNeeded, emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
 import { Subscription } from './subscriptions.service';
-import { Event } from './events.service';
+import { Event, applyEventsQueryBySubscriptions } from './events.service';
 import { format } from 'date-fns/format';
 import { lt } from 'date-fns/locale';
 import { ServerClient } from 'postmark';
 import { User } from './users.service';
-import { intersectsQuery } from 'moleculer-postgis';
 import showdown from 'showdown';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
 const sender = 'esu@smalsuolis.lt';
-
-// returns query with apps and geom filtering based on provided subscriptions.
-function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[]) {
-  if (!subscriptions?.length) {
-    query.$or = { app: { $in: [] } };
-    return query;
-  }
-  const subscriptionQuery = subscriptions.map((subscription) => ({
-    ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-    $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
-  }));
-  if (query?.$or) {
-    query.$and = [query?.$or, { $or: subscriptionQuery }];
-    delete query?.$or;
-  } else {
-    query.$or = subscriptionQuery;
-  }
-  return query;
-}
 
 @Service({
   name: 'newsfeed',
@@ -84,34 +58,22 @@ export default class NewsfeedService extends moleculer.Service {
     rest: 'GET /',
   })
   async list(ctx: Context<any, UserAuthMeta>) {
-    return ctx.call('events.list', {
-      ...ctx.params,
-    });
+    return ctx.call('events.list', ctx.params);
   }
 
   @Action()
   async find(ctx: Context<any, UserAuthMeta>) {
-    return ctx.call('events.find', {
-      ...ctx.params,
-    });
+    return ctx.call('events.find', ctx.params);
   }
 
   @Action()
   async get(ctx: Context<any, UserAuthMeta>) {
-    const { id } = ctx.params;
-    return ctx.call('events.get', {
-      ...ctx.params,
-      id,
-    });
+    return ctx.call('events.get', ctx.params);
   }
 
   @Action()
   async resolve(ctx: Context<any, UserAuthMeta>) {
-    const { id } = ctx.params;
-    return ctx.call('events.resolve', {
-      ...ctx.params,
-      id,
-    });
+    return ctx.call('events.resolve', ctx.params);
   }
 
   @Action()
@@ -153,7 +115,11 @@ export default class NewsfeedService extends moleculer.Service {
     // for each user
     for (const key in subscriptionsMap) {
       const data = subscriptionsMap[key];
-      const query = applyNewsfeedFilters({}, data.subscriptions);
+      if (!data?.subscriptions?.length) {
+        continue;
+      }
+
+      const query = applyEventsQueryBySubscriptions({}, data.subscriptions);
       //select events
       const events: Event<'app'>[] = await this.broker.call('events.find', {
         query: {
@@ -198,15 +164,31 @@ export default class NewsfeedService extends moleculer.Service {
     ctx.params.query = parseToJsonIfNeeded(ctx.params.query) || {};
     const { user } = ctx.meta;
 
+    const query: any = {
+      user: user.id,
+      active: true,
+    };
+
+    // we need to filter subscriptions in the first place
+    if (ctx.params.query.subscription) {
+      query.id = ctx.params.query.subscription;
+      delete ctx.params.query.subscription;
+    }
+
     const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
-      query: {
-        user: user.id,
-        active: true,
-      },
-      populate: ['geomWithBuffer'],
+      query,
+      fields: ['id'],
     });
 
-    ctx.params.query = applyNewsfeedFilters(ctx.params.query, subscriptions);
+    if (!subscriptions?.length) {
+      // TODO: hack for returning 0 items
+      ctx.params.query.$or = { app: { $in: [] } };
+      return ctx;
+    }
+
+    ctx.params.query.subscription = {
+      $in: subscriptions?.map((i) => i.id),
+    };
 
     return ctx;
   }
