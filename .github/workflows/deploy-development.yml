@@ -12,7 +12,7 @@ jobs:
       contents: read
       packages: write
     with:
-      environment: Development
+      environment: development
       runs-on: biip-workflows
-      # enable-sentry: true
+      enable-sentry: true
       docker-image: ghcr.io/AplinkosMinisterija/smalsuolis-api
