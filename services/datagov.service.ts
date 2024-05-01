@@ -4,16 +4,16 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Event } from './events.service';
 import { parse } from 'geojsonjs';
-import { App } from './apps.service';
+import { APP_TYPES, App } from './apps.service';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 
 export enum DATAGOV_APPS {
-  naujas = 'infostatyba-naujas',
-  remontas = 'infostatyba-remontas',
-  griovimas = 'infostatyba-griovimas',
-  paskirties_keitimas = 'infostatyba-paskirties-keitimas',
+  infostatybaNaujas = `${APP_TYPES.infostatyba}-naujas`,
+  infostatybaRemontas = `${APP_TYPES.infostatyba}-remontas`,
+  infostatybaGriovimas = `${APP_TYPES.infostatyba}-griovimas`,
+  infostatybaPaskirtiesKeitimas = `${APP_TYPES.infostatyba}-paskirties-keitimas`,
 }
 
 @Service({
@@ -171,8 +171,16 @@ export default class DatagovService extends moleculer.Service {
   @Method
   async getInfostatybaDokTypesData(ctx: Context) {
     const dokTypesByAppKey = {
-      [DATAGOV_APPS.naujas]: ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
-      [DATAGOV_APPS.remontas]: [
+      [DATAGOV_APPS.infostatybaNaujas]: [
+        'LSNS',
+        'SLRTV',
+        'SLRIE',
+        'SLRKS',
+        'SSIYV',
+        'SBEOS',
+        'SNSPJ',
+      ],
+      [DATAGOV_APPS.infostatybaRemontas]: [
         'LSKR',
         'KRBES',
         'LSPR',
@@ -184,8 +192,8 @@ export default class DatagovService extends moleculer.Service {
         'RSIYV',
         'RBEOS',
       ],
-      [DATAGOV_APPS.griovimas]: ['LGS', 'GBEOS'],
-      [DATAGOV_APPS.paskirties_keitimas]: ['LPSP'],
+      [DATAGOV_APPS.infostatybaGriovimas]: ['LGS', 'GBEOS'],
+      [DATAGOV_APPS.infostatybaPaskirtiesKeitimas]: ['LPSP'],
     };
 
     const appIdByKey: { [key: string]: App['id'] } = await ctx.call('apps.find', {
