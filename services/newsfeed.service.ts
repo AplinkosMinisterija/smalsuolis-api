@@ -157,7 +157,7 @@ export default class NewsfeedService extends moleculer.Service {
       //select events
       const events: Event<'app'>[] = await this.broker.call('events.find', {
         query: {
-          startAt: { $gt: date },
+          createdAt: { $gt: date },
           ...query,
         },
         fields: ['id', 'app', 'name', 'body', 'startAt'],
