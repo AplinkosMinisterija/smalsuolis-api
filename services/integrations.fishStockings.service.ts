@@ -4,9 +4,11 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
 import { Event } from './events.service';
 import { APP_TYPES, App } from './apps.service';
-
+// @ts-ignore
+import transformation from 'transform-coordinates';
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
+import { getFeatureCollection } from 'geojsonjs';
 
 const StatusLabels = {
   FINISHED: 'Įžuvinta',
@@ -126,23 +128,34 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
 
         ids.push(entry.id);
 
+        const fishesNames = entry.batches
+          ?.map((batch) => {
+            const fishType = batch.fishType.label;
+            const fishName = fishType.charAt(0).toUpperCase() + fishType.slice(1);
+            return `${fishName.toLowerCase()} (${batch.fishAge.label.toLowerCase()}) ${
+              batch.reviewAmount || batch.amount
+            } vnt.`;
+          })
+          .join(', ');
+        const transform = transformation('EPSG:4326', '3346');
+        const transformedCoordinates = transform.forward([
+          entry.coordinates.x,
+          entry.coordinates.y,
+        ]);
+
+        const geom = getFeatureCollection({
+          type: 'Point',
+          coordinates: transformedCoordinates,
+        });
+
         const event: Partial<Event> = {
           name: `${entry.location.name} ${entry.location.cadastral_id}, ${entry.location.municipality.name}`,
           body: [
             `**Būsena:** ${StatusLabels[entry.status] || ''}`,
-            `**Žuvys:** `,
-            ...entry.batches
-              ?.map((batch) => {
-                const fishType = batch.fishType.label;
-                const fishName = fishType.charAt(0).toUpperCase() + fishType.slice(1);
-                return `${fishName} (${batch.fishAge.label.toLowerCase()}) ${
-                  batch.reviewAmount || batch.amount
-                } vnt.`;
-              })
-              .join(', '),
+            `**Žuvys:** ${fishesNames || '-'}`,
           ].join('\n\n'),
           startAt: new Date(entry.eventTime),
-          geom: entry.geom,
+          geom,
           app: app.id,
           isFullDay: false,
           externalId: entry.id?.toString(),
