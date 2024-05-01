@@ -121,6 +121,15 @@ export type Subscription<
         },
       },
 
+      eventsCount: {
+        virtual: true,
+        populate: {
+          keyField: 'id',
+          handler: (ctx: Context, values: any[]) =>
+            ctx.call('subscriptions.getEventsCount', { id: values, mapping: true }),
+        },
+      },
+
       frequency: {
         // email sending frequency
         type: 'enum',
