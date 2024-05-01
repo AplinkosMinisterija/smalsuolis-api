@@ -104,14 +104,14 @@ export default class SeedService extends moleculer.Service {
 
   @Method
   async fishStockings(ctx: Context, appsIds: App['id'][]) {
-    await this.broker.waitForServices(['fishStockings', 'events']);
+    await this.broker.waitForServices(['integrations.fishStockings', 'events']);
 
     const count: number = await ctx.call('events.count', {
       query: { app: { $in: appsIds } },
     });
 
     if (!count) {
-      await ctx.call('fishStockings.getData', { limit: 100 });
+      await ctx.call('integrations.fishStockings.getData', { limit: 100 });
     }
   }
 
