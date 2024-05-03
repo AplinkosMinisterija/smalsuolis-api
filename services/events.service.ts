@@ -32,6 +32,19 @@ interface Fields extends CommonFields {
   externalId: string;
 }
 
+export type EventBodyJSON = {
+  title: String;
+  value: String;
+};
+
+export function toEventBodyMarkdown(data: EventBodyJSON[]) {
+  return data
+    .map((i) => {
+      `**${i.title}**: ${i.value || ''}`;
+    })
+    .join('\n\n');
+}
+
 interface Populates extends CommonPopulates {
   app: App;
 }

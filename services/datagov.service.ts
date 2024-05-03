@@ -2,7 +2,7 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { Event } from './events.service';
+import { Event, toEventBodyMarkdown } from './events.service';
 import { parse } from 'geojsonjs';
 import { APP_TYPES, App } from './apps.service';
 
@@ -124,15 +124,17 @@ export default class DatagovService extends moleculer.Service {
           continue;
         }
 
+        const bodyJSON = [
+          { title: 'Projekto pavadinimas', value: entry.projekto_pavadinimas },
+          { title: 'Adresas', value: entry.adresas },
+          { title: 'Statinio kategorija', value: entry.statinio_kategorija || '-' },
+          { title: 'Statybos rūšis', value: entry.statybos_rusis || '-' },
+          { title: 'Statinio pavadinimas', value: entry.statinio_pavadinimas || '-' },
+        ];
+
         const event: Partial<Event> = {
           name: `${entry.statinio_pavadinimas}, ${entry.adresas}`,
-          body: [
-            `**Projekto pavadinimas:** ${entry.projekto_pavadinimas}`,
-            `**Adresas:** ${entry.adresas}`,
-            `**Statinio kategorija:** ${entry.statinio_kategorija || '-'}`,
-            `**Statybos rūšis:** ${entry.statybos_rusis || '-'}`,
-            `**Statinio pavadinimas:** ${entry.statinio_pavadinimas || '-'}`,
-          ].join('\n\n'),
+          body: toEventBodyMarkdown(bodyJSON),
           startAt: new Date(entry.dokumento_reg_data),
           geom,
           app: appIdByDokType[entry.dok_tipo_kodas],
