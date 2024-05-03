@@ -2,7 +2,7 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
-import { Event } from './events.service';
+import { Event, toEventBodyMarkdown } from './events.service';
 import { APP_TYPES, App } from './apps.service';
 // @ts-ignore
 import transformation from 'transform-coordinates';
@@ -147,12 +147,14 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
           coordinates: transformedCoordinates,
         });
 
+        const bodyJSON = [
+          { title: 'Būsena', value: StatusLabels[entry.status] },
+          { title: 'Žuvys', value: fishesNames || '-' },
+        ];
+
         const event: Partial<Event> = {
           name: `${entry.location.name} ${entry.location.cadastral_id}, ${entry.location.municipality.name}`,
-          body: [
-            `**Būsena:** ${StatusLabels[entry.status] || ''}`,
-            `**Žuvys:** ${fishesNames || '-'}`,
-          ].join('\n\n'),
+          body: toEventBodyMarkdown(bodyJSON),
           startAt: new Date(entry.eventTime),
           geom,
           app: app.id,
