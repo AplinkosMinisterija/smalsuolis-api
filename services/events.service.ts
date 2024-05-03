@@ -38,11 +38,7 @@ export type EventBodyJSON = {
 };
 
 export function toEventBodyMarkdown(data: EventBodyJSON[]) {
-  return data
-    .map((i) => {
-      `**${i.title}**: ${i.value || ''}`;
-    })
-    .join('\n\n');
+  return data.map((i) => `**${i.title}**: ${i.value || ''}`).join('\n\n');
 }
 
 interface Populates extends CommonPopulates {
