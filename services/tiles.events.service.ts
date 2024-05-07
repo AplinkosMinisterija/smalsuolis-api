@@ -276,6 +276,8 @@ export default class TilesEventsService extends moleculer.Service {
 
     supercluster.load(featureCollection.features || []);
     this.superclusters[hash] = supercluster;
+
+    delete this.superclustersPromises[hash];
   }
 
   @Event()
