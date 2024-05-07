@@ -43,11 +43,6 @@ export interface App extends CommonFields {
       name: 'string|required',
       description: 'string|required',
       icon: 'string|required',
-      apiKey: {
-        type: 'string',
-        hidden: true,
-      },
-      ...COMMON_FIELDS,
     },
     scopes: {
       ...COMMON_SCOPES,
@@ -55,14 +50,26 @@ export interface App extends CommonFields {
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
+    list: {
+      auth: EndpointType.PUBLIC,
+    },
+    find: {
+      auth: EndpointType.PUBLIC,
+    },
+    get: {
+      auth: EndpointType.PUBLIC,
+    },
+    count: {
+      auth: EndpointType.PUBLIC,
+    },
     create: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
     update: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
     remove: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
   },
 })
