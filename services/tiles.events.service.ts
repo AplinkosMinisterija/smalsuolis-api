@@ -9,7 +9,6 @@ import Supercluster from 'supercluster';
 // @ts-ignore
 import vtpbf from 'vt-pbf';
 import _ from 'lodash';
-import md5 from 'md5';
 import { LKS_SRID } from '../utils';
 
 interface Fields extends CommonFields {
@@ -45,7 +44,7 @@ function getSuperclusterHash(query: any = {}) {
   if (typeof query !== 'string') {
     query = JSON.stringify(query);
   }
-  return md5(query || 'default');
+  return query || 'default';
 }
 
 @Service({
