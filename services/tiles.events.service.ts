@@ -149,12 +149,13 @@ export default class TilesEventsService extends moleculer.Service {
 
     const tileEvents = supercluster.getTile(z, x, y);
 
-    return Buffer.from(
-      vtpbf.fromGeojsonVt(
-        { events: tileEvents || { features: [] } },
-        { extent: superclusterOpts.extent },
-      ),
-    );
+    const layers: any = {};
+
+    if (tileEvents) {
+      layers.events = tileEvents;
+    }
+
+    return Buffer.from(vtpbf.fromGeojsonVt(layers, { extent: superclusterOpts.extent }));
   }
 
   @Action({
