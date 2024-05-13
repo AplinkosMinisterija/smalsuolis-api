@@ -77,6 +77,9 @@ export const APPS = {
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
+    list: {
+      auth: EndpointType.PUBLIC,
+    },
     create: {
       auth: EndpointType.ADMIN,
     },
