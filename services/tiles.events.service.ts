@@ -326,4 +326,9 @@ export default class TilesEventsService extends moleculer.Service {
     this.superclustersPromises = {};
     await this.renewSuperclusterIndex();
   }
+
+  started() {
+    this.superclusters = {};
+    this.superclustersPromises = {};
+  }
 }
