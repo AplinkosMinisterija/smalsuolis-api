@@ -253,15 +253,6 @@ export default class TilesEventsService extends moleculer.Service {
     return this.superclusters[hash];
   }
 
-  async started(): Promise<void> {
-    this.superclusters = {};
-    this.superclustersPromises = {};
-    // This takes time
-    if (!isLocalDevelopment) {
-      await this.renewSuperclusterIndex();
-    }
-  }
-
   @Method
   async renewSuperclusterIndex(query: any = {}) {
     // TODO: apply to all superclusters (if exists)
@@ -297,6 +288,20 @@ export default class TilesEventsService extends moleculer.Service {
     }
 
     return ctx;
+  }
+
+  @Event()
+  async '$broker.started'() {
+    this.superclusters = {};
+    this.superclustersPromises = {};
+    // This takes time
+    if (!isLocalDevelopment) {
+      try {
+        await this.renewSuperclusterIndex();
+      } catch (err) {
+        console.error('Cannot create super clusters', err);
+      }
+    }
   }
 
   @Event()
