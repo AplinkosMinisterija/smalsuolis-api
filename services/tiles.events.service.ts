@@ -134,9 +134,9 @@ export default class TilesEventsService extends moleculer.Service {
   @Action({
     rest: 'GET /:z/:x/:y',
     params: {
-      x: 'number|convert|positive|integer',
-      z: 'number|convert|positive|integer',
-      y: 'number|convert|positive|integer',
+      x: 'number|convert|min:0|integer',
+      z: 'number|convert|min:0|integer',
+      y: 'number|convert|min:0|integer',
       query: ['object|optional', 'string|optional'],
     },
     auth: EndpointType.PUBLIC,
