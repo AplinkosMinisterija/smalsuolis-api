@@ -9,7 +9,9 @@ import Supercluster from 'supercluster';
 // @ts-ignore
 import vtpbf from 'vt-pbf';
 import _ from 'lodash';
-import { LKS_SRID } from '../utils';
+import { parseToJsonIfNeeded } from '../utils';
+import { applyEventsQueryBySubscriptions } from './events.service';
+import { Subscription } from './subscriptions.service';
 
 interface Fields extends CommonFields {
   name: string;
@@ -60,7 +62,10 @@ function getSuperclusterHash(query: any = {}) {
       },
     }),
     PostgisMixin({
-      srid: LKS_SRID,
+      srid: WGS_SRID,
+      geojson: {
+        maxDecimalDigits: 5,
+      },
     }),
   ],
   settings: {
@@ -116,6 +121,14 @@ function getSuperclusterHash(query: any = {}) {
       rest: null,
     },
   },
+  hooks: {
+    before: {
+      list: ['applyFilters'],
+      find: ['applyFilters'],
+      get: ['applyFilters'],
+      resolve: ['applyFilters'],
+    },
+  },
 })
 export default class TilesEventsService extends moleculer.Service {
   @Action({
@@ -138,11 +151,7 @@ export default class TilesEventsService extends moleculer.Service {
   ) {
     const { x, y, z } = ctx.params;
 
-    if (typeof ctx.params.query === 'string') {
-      try {
-        ctx.params.query = JSON.parse(ctx.params.query);
-      } catch (err) {}
-    }
+    ctx.params.query = parseToJsonIfNeeded(ctx.params.query);
     ctx.meta.$responseType = 'application/x-protobuf';
 
     const supercluster = await this.getSupercluster(ctx);
@@ -173,9 +182,10 @@ export default class TilesEventsService extends moleculer.Service {
       {
         cluster: number;
         query: string | GenericObject;
-        page: number;
-        pageSize: number;
-        populate: string | string[];
+        page?: number;
+        pageSize?: number;
+        populate?: string | string[];
+        sort?: string | string[];
       },
       { $responseHeaders: any; $responseType: string }
     >,
@@ -183,59 +193,52 @@ export default class TilesEventsService extends moleculer.Service {
     const { cluster } = ctx.params;
     const page = ctx.params.page || 1;
     const pageSize = ctx.params.pageSize || 10;
+    const { sort, populate } = ctx.params;
     const supercluster: Supercluster = await this.getSupercluster(ctx);
 
     if (!supercluster) throwNotFoundError('No items!');
 
-    const id = supercluster
-      .getLeaves(cluster, pageSize, (page - 1) * pageSize)
-      .map((i) => i.properties.id);
+    const ids = supercluster.getLeaves(cluster, Infinity).map((i) => i.properties.id);
 
-    const rows = await ctx.call('tiles.events.resolve', { id, populate: ctx.params.populate });
-    const total = supercluster.getLeaves(cluster, Infinity).length;
+    if (!ids?.length) {
+      return {
+        rows: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+      };
+    }
 
-    return {
-      rows,
-      total,
+    return ctx.call('tiles.events.list', {
+      query: {
+        // knex support for `$in` is limited to 30K or smth
+        $raw: `id IN ('${ids.join("', '")}')`,
+      },
+      populate,
       page,
       pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+      sort,
+    });
   }
 
   @Action({
-    params: {
-      query: ['object|optional', 'string|optional'],
-    },
     timeout: 0,
   })
   async getEventsFeatureCollection(ctx: Context<{ query: any }>) {
-    const adapter = await this.getAdapter(ctx);
-    const table = adapter.getTable();
-    const knex = adapter.client;
+    const events: TilesEvent[] = await ctx.call('tiles.events.find', {
+      query: ctx.params.query,
+      populate: 'geom',
+      fields: 'geom',
+    });
 
-    let query = ctx.params.query;
-
-    if (typeof query === 'string') {
-      try {
-        query = JSON.parse(query);
-      } catch (err) {}
-    }
-
-    const fields = ['id'];
-
-    const eventsQuery = adapter
-      .computeQuery(table, query)
-      .select(...fields, knex.raw(`ST_Transform(ST_Centroid(geom), ${WGS_SRID}) as geom`));
-
-    const res = await knex
-      .select(knex.raw(`ST_AsGeoJSON(e)::json as feature`))
-
-      .from(eventsQuery.as('e'));
+    const features = events
+      .map((i) => i.geom)
+      .reduce((acc, item) => [...acc, ...item.features], []);
 
     return {
       type: 'FeatureCollection',
-      features: res.map((i: any) => i.feature),
+      features,
     };
   }
 
@@ -278,6 +281,22 @@ export default class TilesEventsService extends moleculer.Service {
     this.superclusters[hash] = supercluster;
 
     delete this.superclustersPromises[hash];
+  }
+
+  @Method
+  async applyFilters(ctx: Context<any>) {
+    ctx.params.query = parseToJsonIfNeeded(ctx.params.query) || {};
+
+    if (ctx.params.query.subscription) {
+      const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
+        query: { id: ctx.params.query.subscription },
+        populate: 'geomWithBuffer',
+      });
+      ctx.params.query = applyEventsQueryBySubscriptions(ctx.params.query, subscriptions);
+      delete ctx.params.query.subscription;
+    }
+
+    return ctx;
   }
 
   @Event()
