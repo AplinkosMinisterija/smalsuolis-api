@@ -127,6 +127,7 @@ function getSuperclusterHash(query: any = {}) {
       find: ['applyFilters'],
       get: ['applyFilters'],
       resolve: ['applyFilters'],
+      getEventsFeatureCollection: ['applyFilters'],
     },
   },
 })
@@ -226,19 +227,30 @@ export default class TilesEventsService extends moleculer.Service {
     timeout: 0,
   })
   async getEventsFeatureCollection(ctx: Context<{ query: any }>) {
-    const events: TilesEvent[] = await ctx.call('tiles.events.find', {
-      query: ctx.params.query,
-      populate: 'geom',
-      fields: 'geom',
-    });
+    let { params } = ctx;
+    params = this.sanitizeParams(params);
+    params = this.paramsFieldNameConversion(params);
 
-    const features = events
-      .map((i) => i.geom)
-      .reduce((acc, item) => [...acc, ...item.features], []);
+    const adapter = await this.getAdapter(ctx);
+    const table = adapter.getTable();
+    const knex = adapter.client;
+
+    const query = parseToJsonIfNeeded(params.query) || {};
+
+    const fields = ['id'];
+
+    const eventsQuery = adapter
+      .computeQuery(table, query)
+      .select(...fields, knex.raw(`ST_Transform(ST_Centroid(geom), ${WGS_SRID}) as geom`));
+
+    const res = await knex
+      .select(knex.raw(`ST_AsGeoJSON(e)::json as feature`))
+
+      .from(eventsQuery.as('e'));
 
     return {
       type: 'FeatureCollection',
-      features,
+      features: res.map((i: any) => i.feature),
     };
   }
 
