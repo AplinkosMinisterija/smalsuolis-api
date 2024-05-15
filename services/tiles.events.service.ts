@@ -155,7 +155,7 @@ export default class TilesEventsService extends moleculer.Service {
     ctx.params.query = parseToJsonIfNeeded(ctx.params.query);
     ctx.meta.$responseType = 'application/x-protobuf';
 
-    const supercluster = await this.getSupercluster(ctx);
+    const supercluster: Supercluster = await this.getSupercluster(ctx);
 
     const tileEvents = supercluster.getTile(z, x, y);
 
