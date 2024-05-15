@@ -2,7 +2,6 @@
 import SentryMixin from 'moleculer-sentry';
 import moleculer from 'moleculer';
 import { Service } from 'moleculer-decorators';
-import { Integrations } from '@sentry/node';
 
 @Service({
   mixins: [SentryMixin],
@@ -19,11 +18,6 @@ import { Integrations } from '@sentry/node';
         environment: process.env.ENVIRONMENT,
         release: process.env.VERSION,
         tracesSampleRate: 1,
-        // integrations: [
-        //   // enable HTTP calls tracing
-        //   new Integrations.Http({ tracing: true }),
-        //   new Integrations.Postgres(),
-        // ],
       },
       /** @type {String?} Name of the meta containing user infos. */
       userMetaKey: 'user',
