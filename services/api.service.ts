@@ -162,7 +162,6 @@ export default class ApiService extends moleculer.Service {
     req: RequestMessage,
   ): Promise<unknown> {
     const actionAuthType = req.$action.auth;
-    console.log(req.headers);
     const auth = req.headers.authorization;
     ctx.meta.app = await ctx.call('auth.apps.resolveToken');
 
