@@ -65,6 +65,7 @@ import { EndpointType, throwNotFoundError, UserAuthMeta, UserType } from '../typ
     },
     before: {
       'evartai.login': 'beforeUserLogin',
+      login: 'beforeLogin',
     },
   },
 })
@@ -152,6 +153,19 @@ export default class AuthService extends moleculer.Service {
   async beforeUserLogin(ctx: any) {
     ctx.params = ctx.params || {};
     ctx.params.refresh = true;
+
+    return ctx;
+  }
+
+  @Method
+  async beforeLogin(ctx: any) {
+    let parent = ctx;
+
+    while (parent?.options?.parentCtx) {
+      parent = parent?.options?.parentCtx;
+    }
+
+    console.log(parent?.params?.req?.headers);
 
     return ctx;
   }
