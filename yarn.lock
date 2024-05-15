@@ -217,7 +217,7 @@
     "@sentry/utils" "7.114.0"
     localforage "^1.8.1"
 
-"@sentry/node@7.114.0", "@sentry/node@^7.28.1":
+"@sentry/node@^7.114.0", "@sentry/node@^7.28.1":
   version "7.114.0"
   resolved "https://registry.yarnpkg.com/@sentry/node/-/node-7.114.0.tgz#51a64139c5d5369ec64c169b4c2f73b8870fc759"
   integrity sha512-cqvi+OHV1Hj64mIGHoZtLgwrh1BG6ntcRjDLlVNMqml5rdTRD3TvG21579FtlqHlwZpbpF7K5xkwl8e5KL2hGw==
