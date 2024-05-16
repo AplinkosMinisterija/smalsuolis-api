@@ -4,7 +4,15 @@ import moleculer, { Context, GenericObject } from 'moleculer';
 import { Action, Event, Method, Service } from 'moleculer-decorators';
 import PostgisMixin from 'moleculer-postgis';
 import DbConnection from '../mixins/database.mixin';
-import { CommonFields, CommonPopulates, EndpointType, Table, throwNotFoundError } from '../types';
+import {
+  COMMON_DEFAULT_SCOPES,
+  COMMON_SCOPES,
+  CommonFields,
+  CommonPopulates,
+  EndpointType,
+  Table,
+  throwNotFoundError,
+} from '../types';
 import Supercluster from 'supercluster';
 // @ts-ignore
 import vtpbf from 'vt-pbf';
@@ -106,6 +114,10 @@ function getSuperclusterHash(query: any = {}) {
         default: false,
       },
     },
+    scopes: {
+      ...COMMON_SCOPES,
+    },
+    defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
     list: {
@@ -229,6 +241,7 @@ export default class TilesEventsService extends moleculer.Service {
   async getEventsFeatureCollection(ctx: Context<{ query: any }>) {
     let { params } = ctx;
     params = this.sanitizeParams(params);
+    params = await this._applyScopes(params, ctx);
     params = this.paramsFieldNameConversion(params);
 
     const adapter = await this.getAdapter(ctx);
