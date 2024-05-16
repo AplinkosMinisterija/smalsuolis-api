@@ -132,14 +132,12 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
     find: {
       rest: null,
     },
-    count: {
-      rest: null,
-    },
   },
   hooks: {
     before: {
       list: ['applyFilters'],
       find: ['applyFilters'],
+      count: ['applyFilters'],
       get: ['applyFilters'],
       resolve: ['applyFilters'],
     },
