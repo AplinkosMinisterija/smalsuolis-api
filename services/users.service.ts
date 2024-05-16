@@ -153,7 +153,7 @@ export default class UsersService extends moleculer.Service {
     });
 
     if (userExists?.id) {
-      return throwBadRequestError('User already exists.');
+      return throwBadRequestError('User already exists.', 'USER_EXISTS');
     }
 
     const inviteData = {
