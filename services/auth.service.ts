@@ -65,6 +65,7 @@ import { EndpointType, throwNotFoundError, UserAuthMeta, UserType } from '../typ
     },
     before: {
       'evartai.login': 'beforeUserLogin',
+      remindPassword: 'beforeRemindPassword',
     },
   },
 })
@@ -152,6 +153,21 @@ export default class AuthService extends moleculer.Service {
   async beforeUserLogin(ctx: any) {
     ctx.params = ctx.params || {};
     ctx.params.refresh = true;
+
+    return ctx;
+  }
+
+  @Method
+  async beforeRemindPassword(ctx: any) {
+    const userExists: User = await ctx.call('users.findOne', {
+      query: {
+        email: ctx.params.email,
+      },
+    });
+
+    if (!userExists?.id) {
+      return throwNotFoundError('User not exist');
+    }
 
     return ctx;
   }
