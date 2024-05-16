@@ -11,3 +11,7 @@ export function throwNotFoundError(message?: string): Errors.MoleculerError {
 export function throwNoRightsError(message?: string): Errors.MoleculerError {
   throw new Moleculer.Errors.MoleculerClientError(message || `No rights.`, 403, 'NO_RIGHTS');
 }
+
+export function throwBadRequestError(message?: string): Errors.MoleculerError {
+  throw new Moleculer.Errors.MoleculerClientError(message || `Bad request.`, 400, 'BAD_REQUEST');
+}
