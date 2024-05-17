@@ -129,6 +129,9 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
     get: {
       auth: EndpointType.PUBLIC,
     },
+    count: {
+      auth: EndpointType.PUBLIC,
+    },
     find: {
       rest: null,
     },
