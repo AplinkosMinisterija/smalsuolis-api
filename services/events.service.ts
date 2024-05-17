@@ -129,10 +129,10 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
     get: {
       auth: EndpointType.PUBLIC,
     },
-    find: {
-      rest: null,
-    },
     count: {
+      auth: EndpointType.PUBLIC,
+    },
+    find: {
       rest: null,
     },
   },
@@ -140,6 +140,7 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
     before: {
       list: ['applyFilters'],
       find: ['applyFilters'],
+      count: ['applyFilters'],
       get: ['applyFilters'],
       resolve: ['applyFilters'],
     },

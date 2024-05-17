@@ -22,6 +22,7 @@ const sender = 'esu@smalsuolis.lt';
     before: {
       list: ['applyFilters'],
       find: ['applyFilters'],
+      count: ['applyFilters'],
       get: ['applyFilters'],
       resolve: ['applyFilters'],
     },
@@ -66,7 +67,9 @@ export default class NewsfeedService extends moleculer.Service {
     return ctx.call('events.find', ctx.params);
   }
 
-  @Action()
+  @Action({
+    rest: 'GET /:id',
+  })
   async get(ctx: Context<any, UserAuthMeta>) {
     return ctx.call('events.get', ctx.params);
   }
@@ -74,6 +77,13 @@ export default class NewsfeedService extends moleculer.Service {
   @Action()
   async resolve(ctx: Context<any, UserAuthMeta>) {
     return ctx.call('events.resolve', ctx.params);
+  }
+
+  @Action({
+    rest: 'GET /count',
+  })
+  async count(ctx: Context<any, UserAuthMeta>) {
+    return ctx.call('events.count', ctx.params);
   }
 
   @Action()
