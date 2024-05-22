@@ -13,6 +13,6 @@ jobs:
       packages: write
     with:
       environment: development
-      runs-on: biip-workflows
+      runs-on: ubuntu-latest
       enable-sentry: true
       docker-image: ghcr.io/AplinkosMinisterija/smalsuolis-api
