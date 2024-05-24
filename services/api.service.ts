@@ -24,7 +24,7 @@ import {
       // Configures the Access-Control-Allow-Origin CORS header.
       origin: '*',
       // Configures the Access-Control-Allow-Methods CORS header.
-      methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE'],
+      methods: '*',
       // Configures the Access-Control-Allow-Headers CORS header.
       allowedHeaders: '*',
       // Configures the Access-Control-Expose-Headers CORS header.
