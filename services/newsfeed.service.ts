@@ -86,7 +86,9 @@ export default class NewsfeedService extends moleculer.Service {
     return ctx.call('events.count', ctx.params);
   }
 
-  @Action()
+  @Action({
+    timeout: 0,
+  })
   async handleEmails(ctx: Context<{ frequency: Frequency }>) {
     if (!emailCanBeSent()) return;
     const frequency = ctx.params.frequency;
