@@ -69,7 +69,7 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
         },
       );
 
-      const geojson = await new Promise(function (resolve) {
+      const geojson: any = await new Promise(function (resolve) {
         response.pipe(unzipper.Parse()).pipe(
           new stream.Transform({
             objectMode: true,
@@ -98,7 +98,11 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
         );
       });
 
-      console.log(geojson);
+      const features: any[] = ctx.params.limit
+        ? geojson.features.splice(0, ctx.params.limit)
+        : geojson.features;
+
+      console.log(features);
     }
 
     this.broker.emit('tiles.events.renew');
