@@ -8,6 +8,11 @@ import Cron from '@r2d2bzh/moleculer-cron';
 import unzipper from 'unzipper';
 import stream from 'node:stream';
 
+import pointOnFeature from '@turf/point-on-feature';
+import transformation from 'transform-coordinates';
+import { getFeatureCollection } from 'geojsonjs';
+import { Event, toEventBodyMarkdown } from './events.service';
+
 @Service({
   name: 'integrations.lumbering',
   settings: {
@@ -102,7 +107,75 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
         ? geojson.features.splice(0, ctx.params.limit)
         : geojson.features;
 
-      console.log(features);
+      for (const feature of features) {
+        const pointOnPolygon = pointOnFeature(feature);
+
+        const transform = transformation('EPSG:4326', '3346');
+        const transformedCoordinates = transform.forward([
+          pointOnPolygon.geometry.coordinates[0],
+          pointOnPolygon.geometry.coordinates[1],
+        ]);
+
+        const geom = getFeatureCollection({
+          type: 'Point',
+          coordinates: transformedCoordinates,
+        });
+
+        const bodyJSON = [
+          { title: 'VĮ VMU padalinys', value: `${feature.properties.vmu_padalinys} RP` },
+          { title: 'Girininkija', value: `${feature.properties.girininkija} girininkija` },
+          {
+            title: 'Galioja',
+            value: `${feature.properties.galioja_nuo} iki ${feature.properties.galioja_iki}`,
+          },
+          { title: 'Kvartalas', value: feature.properties.kvartalas },
+          { title: 'Sklypas', value: feature.properties.sklypas },
+          { title: 'Kertamas plotas', value: feature.properties.kertamas_plotas },
+          { title: 'Kirtimo rūšis', value: feature.properties.kirtimo_rusis },
+          { title: 'Vyraujantys medžiai', value: feature.properties.vyraujantys_medziai },
+          { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
+        ];
+
+        const event: Partial<Event> = {
+          // TODO: check this: Einamasis kirtimas - hardcode? "r.p." - hardcode?
+          name: `Einamasis kirtimas, ${feature.properties.girininkija} girininkija, ${feature.properties.vmu_padalinys} r.p.`,
+          body: toEventBodyMarkdown(bodyJSON),
+          // TODO: check this
+          startAt: new Date(feature.properties.galioja_nuo),
+          geom,
+          app: app.id,
+          isFullDay: false,
+          // TODO: tikrai kadastrinis_nr?
+          externalId: feature.properties.kadastrinis_nr,
+        };
+
+        stats.total++;
+
+        if (!event.externalId) {
+          stats.invalid.total++;
+        } else {
+          const existingEvent: Event = await ctx.call('events.findOne', {
+            query: {
+              externalId: event.externalId,
+            },
+          });
+
+          if (existingEvent?.id) {
+            await ctx.call('events.update', {
+              id: Number(existingEvent.id),
+              ...event,
+            });
+            stats.valid.total++;
+            stats.valid.updated++;
+          } else {
+            await ctx.call('events.create', event);
+            stats.valid.total++;
+            stats.valid.inserted++;
+          }
+        }
+      }
+
+      //      console.log(JSON.stringify(features, null, 2));
     }
 
     this.broker.emit('tiles.events.renew');

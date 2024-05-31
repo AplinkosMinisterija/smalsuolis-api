@@ -4,8 +4,8 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
 import { APP_TYPES, App } from './apps.service';
-// @ts-ignore
 import transformation from 'transform-coordinates';
+
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import { getFeatureCollection } from 'geojsonjs';
