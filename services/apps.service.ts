@@ -14,6 +14,7 @@ import {
 export enum APP_TYPES {
   infostatyba = 'infostatyba',
   izuvinimas = 'izuvinimas',
+  miskoKirtimas = 'miskoKirtimas',
 }
 
 export interface App extends CommonFields {
