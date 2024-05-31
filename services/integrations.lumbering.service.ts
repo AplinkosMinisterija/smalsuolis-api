@@ -174,8 +174,6 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
           }
         }
       }
-
-      //      console.log(JSON.stringify(features, null, 2));
     }
 
     this.broker.emit('tiles.events.renew');
