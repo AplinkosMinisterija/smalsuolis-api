@@ -73,7 +73,7 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
         response.pipe(unzipper.Parse()).pipe(
           new stream.Transform({
             objectMode: true,
-            transform: async function (entry, e, cb) {
+            transform: async function (entry, _e, cb) {
               const fileName = entry.path;
               const type = entry.type; // 'Directory' or 'File'
 
