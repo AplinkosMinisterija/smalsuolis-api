@@ -51,7 +51,7 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
-        key: APP_TYPES.miskoKirtimas,
+        key: APP_TYPES.miskoKirtimai,
       },
     });
 
