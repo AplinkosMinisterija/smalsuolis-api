@@ -32,7 +32,7 @@ import { Event, toEventBodyMarkdown } from './events.service';
     },
   ],
 })
-export default class IntegrationsLumberingStockingsService extends moleculer.Service {
+export default class IntegrationsLumberingService extends moleculer.Service {
   @Action({
     timeout: 0,
     params: {
@@ -62,116 +62,117 @@ export default class IntegrationsLumberingStockingsService extends moleculer.Ser
       },
     });
 
-    if (app?.id) {
-      const response: any = await ctx.call(
-        'http.get',
-        {
-          url: this.settings.zipUrl,
-          opt: { isStream: true },
-        },
-        {
-          timeout: 0,
-        },
+    if (!app?.id) {
+      return;
+    }
+
+    const response: any = await ctx.call(
+      'http.get',
+      {
+        url: this.settings.zipUrl,
+        opt: { isStream: true },
+      },
+      {
+        timeout: 0,
+      },
+    );
+
+    const geojson: any = await new Promise(function (resolve) {
+      response.pipe(unzipper.Parse()).pipe(
+        new stream.Transform({
+          objectMode: true,
+          transform: async function (entry, _e, cb) {
+            const fileName = entry.path;
+            const type = entry.type; // 'Directory' or 'File'
+
+            if (type === 'File' && fileName === 'lkmp-data.geojson') {
+              const chunks: Buffer[] = [];
+
+              entry.on('data', function (chunk: Buffer) {
+                chunks.push(chunk);
+              });
+
+              // Send the buffer or you can put it into a var
+              entry.on('end', function () {
+                const jsonString = Buffer.concat(chunks).toString('utf-8');
+                const geojson = JSON.parse(jsonString);
+                resolve(geojson);
+              });
+            }
+
+            cb();
+          },
+        }),
       );
+    });
 
-      const geojson: any = await new Promise(function (resolve) {
-        response.pipe(unzipper.Parse()).pipe(
-          new stream.Transform({
-            objectMode: true,
-            transform: async function (entry, _e, cb) {
-              const fileName = entry.path;
-              const type = entry.type; // 'Directory' or 'File'
+    const features: any[] = ctx.params.limit
+      ? geojson.features.splice(0, ctx.params.limit)
+      : geojson.features;
 
-              if (type === 'File' && fileName === 'lkmp-data.geojson') {
-                const chunks: Buffer[] = [];
+    for (const feature of features) {
+      const pointOnPolygon = pointOnFeature(feature);
 
-                entry.on('data', function (chunk: Buffer) {
-                  chunks.push(chunk);
-                });
+      const transform = transformation('EPSG:4326', '3346');
+      const transformedCoordinates = transform.forward([
+        pointOnPolygon.geometry.coordinates[0],
+        pointOnPolygon.geometry.coordinates[1],
+      ]);
 
-                // Send the buffer or you can put it into a var
-                entry.on('end', function () {
-                  const jsonString = Buffer.concat(chunks).toString('utf-8');
-                  const geojson = JSON.parse(jsonString);
-                  resolve(geojson);
-                });
-              }
-
-              cb();
-            },
-          }),
-        );
+      const geom = getFeatureCollection({
+        type: 'Point',
+        coordinates: transformedCoordinates,
       });
 
-      const features: any[] = ctx.params.limit
-        ? geojson.features.splice(0, ctx.params.limit)
-        : geojson.features;
+      const bodyJSON = [
+        { title: 'VĮ VMU padalinys', value: `${feature.properties.padalinys} RP` },
+        { title: 'Girininkija', value: `${feature.properties.girininkija} girininkija` },
+        {
+          title: 'Galioja',
+          value: `${feature.properties.galioja_nuo} iki ${feature.properties.galioja_iki}`,
+        },
+        { title: 'Kvartalas', value: feature.properties.kvartalas },
+        { title: 'Sklypas', value: feature.properties.sklypas },
+        { title: 'Kertamas plotas', value: feature.properties.kertamas_plotas },
+        { title: 'Kirtimo rūšis', value: feature.properties.kirtimo_rusis },
+        { title: 'Vyraujantys medžiai', value: feature.properties.vyraujantys_medziai },
+        { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
+      ];
 
-      for (const feature of features) {
-        const pointOnPolygon = pointOnFeature(feature);
+      const event: Partial<Event> = {
+        name: `${feature.properties.kirtimo_rusis}, ${feature.properties.girininkija} girininkija, ${feature.properties.padalinys} r.p.`,
+        body: toEventBodyMarkdown(bodyJSON),
+        startAt: new Date(feature.properties.galioja_nuo),
+        endAt: new Date(feature.properties.galioja_iki),
+        geom,
+        app: app.id,
+        isFullDay: true,
+        externalId: feature.properties.id,
+      };
 
-        const transform = transformation('EPSG:4326', '3346');
-        const transformedCoordinates = transform.forward([
-          pointOnPolygon.geometry.coordinates[0],
-          pointOnPolygon.geometry.coordinates[1],
-        ]);
+      stats.total++;
 
-        const geom = getFeatureCollection({
-          type: 'Point',
-          coordinates: transformedCoordinates,
+      if (!event.externalId) {
+        stats.invalid.total++;
+      } else {
+        const existingEvent: Event = await ctx.call('events.findOne', {
+          query: {
+            externalId: event.externalId,
+            app: app.id,
+          },
         });
 
-        const bodyJSON = [
-          { title: 'VĮ VMU padalinys', value: `${feature.properties.vmu_padalinys} RP` },
-          { title: 'Girininkija', value: `${feature.properties.girininkija} girininkija` },
-          {
-            title: 'Galioja',
-            value: `${feature.properties.galioja_nuo} iki ${feature.properties.galioja_iki}`,
-          },
-          { title: 'Kvartalas', value: feature.properties.kvartalas },
-          { title: 'Sklypas', value: feature.properties.sklypas },
-          { title: 'Kertamas plotas', value: feature.properties.kertamas_plotas },
-          { title: 'Kirtimo rūšis', value: feature.properties.kirtimo_rusis },
-          { title: 'Vyraujantys medžiai', value: feature.properties.vyraujantys_medziai },
-          { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
-        ];
-
-        const event: Partial<Event> = {
-          // TODO: check this: Einamasis kirtimas - hardcode? "r.p." - hardcode?
-          name: `Einamasis kirtimas, ${feature.properties.girininkija} girininkija, ${feature.properties.vmu_padalinys} r.p.`,
-          body: toEventBodyMarkdown(bodyJSON),
-          // TODO: check this
-          startAt: new Date(feature.properties.galioja_nuo),
-          geom,
-          app: app.id,
-          isFullDay: false,
-          // TODO: tikrai kadastrinis_nr?
-          externalId: feature.properties.kadastrinis_nr,
-        };
-
-        stats.total++;
-
-        if (!event.externalId) {
-          stats.invalid.total++;
-        } else {
-          const existingEvent: Event = await ctx.call('events.findOne', {
-            query: {
-              externalId: event.externalId,
-            },
+        if (existingEvent?.id) {
+          await ctx.call('events.update', {
+            id: Number(existingEvent.id),
+            ...event,
           });
-
-          if (existingEvent?.id) {
-            await ctx.call('events.update', {
-              id: Number(existingEvent.id),
-              ...event,
-            });
-            stats.valid.total++;
-            stats.valid.updated++;
-          } else {
-            await ctx.call('events.create', event);
-            stats.valid.total++;
-            stats.valid.inserted++;
-          }
+          stats.valid.total++;
+          stats.valid.updated++;
+        } else {
+          await ctx.call('events.create', event);
+          stats.valid.total++;
+          stats.valid.inserted++;
         }
       }
     }
