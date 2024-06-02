@@ -110,10 +110,10 @@ export default class IntegrationsLumberingService extends moleculer.Service {
       ? geojson.features.splice(0, ctx.params.limit)
       : geojson.features;
 
+    const transform = transformation('EPSG:4326', '3346');
     for (const feature of features) {
       const pointOnPolygon = pointOnFeature(feature);
 
-      const transform = transformation('EPSG:4326', '3346');
       const transformedCoordinates = transform.forward([
         pointOnPolygon.geometry.coordinates[0],
         pointOnPolygon.geometry.coordinates[1],
