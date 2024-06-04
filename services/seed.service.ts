@@ -126,7 +126,7 @@ export default class SeedService extends moleculer.Service {
 
   @Method
   async lumbering(ctx: Context, appsIds: App['id'][]) {
-    await this.broker.waitForServices(['integrations.fishStockings', 'events']);
+    await this.broker.waitForServices(['integrations.lumbering', 'events']);
 
     const count: number = await ctx.call('events.count', {
       query: { app: { $in: appsIds } },

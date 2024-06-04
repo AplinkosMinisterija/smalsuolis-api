@@ -164,6 +164,7 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
 
         const existingEvent: Event = await ctx.call('events.findOne', {
           query: {
+            app: app.id,
             externalId: entry.id,
           },
         });
