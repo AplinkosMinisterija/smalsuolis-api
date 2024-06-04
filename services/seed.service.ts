@@ -66,6 +66,7 @@ export default class SeedService extends moleculer.Service {
     const apps: Record<string, App['id'][]> = await this.seedApps(ctx);
     await this.infostatyba(ctx, apps.infostatyba);
     await this.fishStockings(ctx, apps.izuvinimas);
+    await this.lumbering(ctx, apps.miskoKirtimai);
     return true;
   }
 
@@ -117,7 +118,25 @@ export default class SeedService extends moleculer.Service {
     });
 
     if (!count) {
-      await ctx.call('integrations.fishStockings.getData', { limit: 100 });
+      await ctx.call('integrations.fishStockings.getData', {
+        limit: process.env.NODE_ENV === 'local' ? 100 : 0,
+      });
+    }
+  }
+
+  @Method
+  async lumbering(ctx: Context, appsIds: App['id'][]) {
+    await this.broker.waitForServices(['integrations.fishStockings', 'events']);
+
+    const count: number = await ctx.call('events.count', {
+      query: { app: { $in: appsIds } },
+    });
+
+    if (!count) {
+      await ctx.call('integrations.lumbering.getData', {
+        limit: process.env.NODE_ENV === 'local' ? 100 : 0,
+        initial: true,
+      });
     }
   }
 

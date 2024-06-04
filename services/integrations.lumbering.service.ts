@@ -41,9 +41,14 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         optional: true,
         default: 0,
       },
+      initial: {
+        type: 'boolean',
+        optional: true,
+        default: false,
+      },
     },
   })
-  async getData(ctx: Context<{ limit: number }>) {
+  async getData(ctx: Context<{ limit: number; initial: boolean }>) {
     const stats = {
       total: 0,
       valid: {
@@ -149,6 +154,10 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         isFullDay: true,
         externalId: feature.properties.id,
       };
+
+      if (ctx.params.initial) {
+        event.createdAt = event.startAt;
+      }
 
       stats.total++;
 
