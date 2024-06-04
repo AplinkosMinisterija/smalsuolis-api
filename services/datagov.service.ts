@@ -147,6 +147,7 @@ export default class DatagovService extends moleculer.Service {
         const existingEvent: Event = await ctx.call('events.findOne', {
           query: {
             externalId: event.externalId,
+            app: appIdByDokType[entry.dok_tipo_kodas],
           },
         });
 

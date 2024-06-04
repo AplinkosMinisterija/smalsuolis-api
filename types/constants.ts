@@ -31,8 +31,8 @@ export const COMMON_FIELDS = {
   createdAt: {
     type: 'date',
     columnType: 'datetime',
-    readonly: true,
-    onCreate: () => new Date(),
+    immutable: true,
+    onCreate: ({ value }: FieldHookCallback) => value || new Date(),
   },
 
   updatedBy: {
