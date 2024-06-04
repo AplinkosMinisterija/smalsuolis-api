@@ -135,6 +135,15 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
     find: {
       rest: null,
     },
+    create: {
+      rest: null,
+    },
+    update: {
+      rest: null,
+    },
+    remove: {
+      rest: null,
+    },
   },
   hooks: {
     before: {
