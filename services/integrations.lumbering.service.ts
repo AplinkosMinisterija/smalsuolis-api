@@ -8,9 +8,6 @@ import Cron from '@r2d2bzh/moleculer-cron';
 import unzipper from 'unzipper';
 import stream from 'node:stream';
 
-import pointOnFeature from '@turf/point-on-feature';
-import transformation from 'transform-coordinates';
-import { getFeatureCollection } from 'geojsonjs';
 import { Event, toEventBodyMarkdown } from './events.service';
 
 @Service({
@@ -115,19 +112,8 @@ export default class IntegrationsLumberingService extends moleculer.Service {
       ? geojson.features.splice(0, ctx.params.limit)
       : geojson.features;
 
-    const transform = transformation('EPSG:4326', '3346');
     for (const feature of features) {
-      const pointOnPolygon = pointOnFeature(feature);
-
-      const transformedCoordinates = transform.forward([
-        pointOnPolygon.geometry.coordinates[0],
-        pointOnPolygon.geometry.coordinates[1],
-      ]);
-
-      const geom = getFeatureCollection({
-        type: 'Point',
-        coordinates: transformedCoordinates,
-      });
+      feature.geometry.crs = 'EPSG:4326';
 
       const bodyJSON = [
         { title: 'VĮ VMU padalinys', value: `${feature.properties.padalinys} RP` },
@@ -138,7 +124,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         },
         { title: 'Kvartalas', value: feature.properties.kvartalas },
         { title: 'Sklypas', value: feature.properties.sklypas },
-        { title: 'Kertamas plotas', value: feature.properties.kertamas_plotas },
+        { title: 'Kertamas plotas', value: `${feature.properties.kertamas_plotas || '-'} ha` },
         { title: 'Kirtimo rūšis', value: feature.properties.kirtimo_rusis },
         { title: 'Vyraujantys medžiai', value: feature.properties.vyraujantys_medziai },
         { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
@@ -149,7 +135,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(feature.properties.galioja_nuo),
         endAt: new Date(feature.properties.galioja_iki),
-        geom,
+        geom: feature,
         app: app.id,
         isFullDay: true,
         externalId: feature.properties.id,
