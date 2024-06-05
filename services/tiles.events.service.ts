@@ -258,7 +258,8 @@ export default class TilesEventsService extends moleculer.Service {
     const envelopeQuery = `ST_TileEnvelope(${z}, ${x}, ${y})`;
     const transformedEnvelopeQuery = `ST_Transform(${envelopeQuery}, ${LKS_SRID})`;
     const transformedGeomQuery = `ST_Transform(ST_CurveToLine("geom"), ${WM_SRID})`;
-    const eventsQuery = adapter
+
+    const asMvtGeomQuery = adapter
       .computeQuery(table, query)
       .whereRaw(`ST_Intersects(events.geom, ${transformedEnvelopeQuery})`)
       .select(
@@ -268,7 +269,7 @@ export default class TilesEventsService extends moleculer.Service {
 
     const tileQuery = knex
       .select(knex.raw(`ST_AsMVT(tile, 'events', 4096, 'geom') as tile`))
-      .from(eventsQuery.as('tile'))
+      .from(asMvtGeomQuery.as('tile'))
       .whereNotNull('geom');
 
     return tileQuery.first();
