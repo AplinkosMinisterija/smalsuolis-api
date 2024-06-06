@@ -17,9 +17,10 @@ import Supercluster from 'supercluster';
 // @ts-ignore
 import vtpbf from 'vt-pbf';
 import _ from 'lodash';
-import { parseToJsonIfNeeded } from '../utils';
+import { LKS_SRID, parseToJsonIfNeeded } from '../utils';
 import { applyEventsQueryBySubscriptions } from './events.service';
 import { Subscription } from './subscriptions.service';
+import { Knex } from 'knex';
 
 interface Fields extends CommonFields {
   name: string;
@@ -167,17 +168,24 @@ export default class TilesEventsService extends moleculer.Service {
     ctx.params.query = parseToJsonIfNeeded(ctx.params.query);
     ctx.meta.$responseType = 'application/x-protobuf';
 
-    const supercluster: Supercluster = await this.getSupercluster(ctx);
+    // make clusters
+    if (z <= 12) {
+      const supercluster: Supercluster = await this.getSupercluster(ctx);
 
-    const tileEvents = supercluster.getTile(z, x, y);
+      const tileEvents = supercluster.getTile(z, x, y);
 
-    const layers: any = {};
+      const layers: any = {};
 
-    if (tileEvents) {
-      layers.events = tileEvents;
+      if (tileEvents) {
+        layers.events = tileEvents;
+      }
+
+      return Buffer.from(vtpbf.fromGeojsonVt(layers, { extent: superclusterOpts.extent }));
     }
 
-    return Buffer.from(vtpbf.fromGeojsonVt(layers, { extent: superclusterOpts.extent }));
+    // show real geometries
+    const tileData = await this.getMVTTiles(ctx);
+    return tileData.tile;
   }
 
   @Action({
@@ -235,36 +243,71 @@ export default class TilesEventsService extends moleculer.Service {
     });
   }
 
+  @Method
+  async getMVTTiles(ctx: Context<{ query: any; x: number; y: number; z: number }>) {
+    const adapter = await this.getAdapter(ctx);
+    const table = adapter.getTable();
+    const knex: Knex = adapter.client;
+
+    const query = await this.getComputedQuery(ctx);
+
+    const fields = ['id'];
+    const { x, y, z } = ctx.params;
+
+    const WM_SRID = 3857;
+    const envelopeQuery = `ST_TileEnvelope(${z}, ${x}, ${y})`;
+    const transformedEnvelopeQuery = `ST_Transform(${envelopeQuery}, ${LKS_SRID})`;
+    const transformedGeomQuery = `ST_Transform(ST_CurveToLine("geom"), ${WM_SRID})`;
+
+    const asMvtGeomQuery = adapter
+      .computeQuery(table, query)
+      .whereRaw(`ST_Intersects(events.geom, ${transformedEnvelopeQuery})`)
+      .select(
+        ...fields,
+        knex.raw(`ST_AsMVTGeom(${transformedGeomQuery}, ${envelopeQuery}, 4096, 64, true) AS geom`),
+      );
+
+    const tileQuery = knex
+      .select(knex.raw(`ST_AsMVT(tile, 'events', 4096, 'geom') as tile`))
+      .from(asMvtGeomQuery.as('tile'))
+      .whereNotNull('geom');
+
+    return tileQuery.first();
+  }
+
   @Action({
     timeout: 0,
   })
   async getEventsFeatureCollection(ctx: Context<{ query: any }>) {
-    let { params } = ctx;
-    params = this.sanitizeParams(params);
-    params = await this._applyScopes(params, ctx);
-    params = this.paramsFieldNameConversion(params);
-
     const adapter = await this.getAdapter(ctx);
     const table = adapter.getTable();
     const knex = adapter.client;
 
-    const query = parseToJsonIfNeeded(params.query) || {};
-
+    const query = await this.getComputedQuery(ctx);
     const fields = ['id'];
 
     const eventsQuery = adapter
       .computeQuery(table, query)
-      .select(...fields, knex.raw(`ST_Transform(ST_Centroid(geom), ${WGS_SRID}) as geom`));
+      .select(...fields, knex.raw(`ST_Transform(ST_PointOnSurface(geom), ${WGS_SRID}) as geom`));
 
     const res = await knex
       .select(knex.raw(`ST_AsGeoJSON(e)::json as feature`))
-
       .from(eventsQuery.as('e'));
 
     return {
       type: 'FeatureCollection',
       features: res.map((i: any) => i.feature),
     };
+  }
+
+  @Method
+  async getComputedQuery(ctx: Context<{ query: any }>) {
+    let { params } = ctx;
+    params = this.sanitizeParams(params);
+    params = await this._applyScopes(params, ctx);
+    params = this.paramsFieldNameConversion(params);
+
+    return parseToJsonIfNeeded(params.query) || {};
   }
 
   @Method
