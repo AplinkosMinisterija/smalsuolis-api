@@ -245,6 +245,7 @@ export default class TilesEventsService extends moleculer.Service {
 
   @Method
   async getMVTTiles(ctx: Context<{ query: any; x: number; y: number; z: number }>) {
+    ctx = await this.applyFilters(ctx);
     const adapter = await this.getAdapter(ctx);
     const table = adapter.getTable();
     const knex: Knex = adapter.client;
