@@ -160,8 +160,8 @@ export type Subscription<
     },
     scopes: {
       user(query: any, ctx: Context<null, UserAuthMeta>, params: any) {
+        if (!ctx?.meta?.user?.id) return query;
         const { user } = ctx.meta;
-        if (!user?.id) return query;
         query.user = user.id;
         return query;
       },
@@ -276,7 +276,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const { id, mapping } = ctx.params;
     const ids = Array.isArray(id) ? id : [id];
 
-    await ctx.call('subscriptions.resolve', { id: ids, throwIfNotExist: true });
+    await this.resolveEntities(ctx, { id: ids, throwIfNotExist: true });
 
     const adapter = await this.getAdapter(ctx);
 
@@ -373,6 +373,29 @@ export default class SubscriptionsService extends moleculer.Service {
     return countBySubscriptions;
   }
 
+  @Method
+  updateEventsCountCache(
+    ctx: Context,
+    id: Subscription['id'],
+    eventsCount: Subscription['eventsCount'],
+  ) {
+    return this.updateEntity(
+      ctx,
+      {
+        id,
+        $set: {
+          eventsCount,
+        },
+      },
+      {
+        // will set only eventsCount, without modifying updatedBy and other fields
+        raw: true,
+        // eventsCount - readonly field and modified only there
+        permissive: true,
+      },
+    );
+  }
+
   @Event()
   async 'subscriptions.*'(ctx: Context<EntityChangedParams<Subscription>>) {
     const type = ctx.params.type;
@@ -392,16 +415,7 @@ export default class SubscriptionsService extends moleculer.Service {
           mapping: true,
         });
 
-        await this.updateEntity(
-          ctx,
-          {
-            id,
-            eventsCount: eventsCounts[id],
-          },
-          {
-            permissive: true,
-          },
-        );
+        await this.updateEventsCountCache(ctx, id, eventsCounts[id]);
         break;
     }
   }
@@ -416,16 +430,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
 
     for (const id in eventsCounts) {
-      await this.updateEntity(
-        ctx,
-        {
-          id,
-          eventsCount: eventsCounts[id],
-        },
-        {
-          permissive: true,
-        },
-      );
+      await this.updateEventsCountCache(ctx, Number(id), eventsCounts[id]);
     }
   }
 
@@ -449,6 +454,29 @@ export default class SubscriptionsService extends moleculer.Service {
     const subscription = await this.findEntity(ctx, { id: ctx.params.id });
     if (subscription?.user !== ctx.meta.user.id) {
       throwNoRightsError();
+    }
+  }
+
+  async started() {
+    const subscriptionsWithoutCache: Array<Subscription<null, 'id'>> = await this.findEntities(
+      null,
+      {
+        query: {
+          eventsCount: {
+            $exists: false,
+          },
+        },
+        fields: ['id'],
+      },
+    );
+
+    if (!subscriptionsWithoutCache.length) return;
+
+    const allIds = subscriptionsWithoutCache.map((s) => s.id);
+    const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
+
+    for (const id in eventsCounts) {
+      await this.updateEventsCountCache(null, Number(id), eventsCounts[id]);
     }
   }
 }
