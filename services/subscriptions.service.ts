@@ -19,6 +19,7 @@ import {
   Table,
   throwNoRightsError,
   UserAuthMeta,
+  EntityChangedParams,
 } from '../types';
 import { LKS_SRID } from '../utils';
 import { App } from './apps.service';
@@ -32,6 +33,10 @@ interface Fields extends CommonFields {
   frequency: Frequency;
   active: boolean;
   geomWithBuffer?: FeatureCollection;
+  eventsCount?: {
+    allTime: number;
+    new: number;
+  };
 }
 
 interface Populates extends CommonPopulates {
@@ -46,7 +51,13 @@ export type Subscription<
 
 @Service({
   name: 'subscriptions',
-  mixins: [DbConnection({ collection: 'subscriptions' }), PostgisMixin({ srid: LKS_SRID })],
+  mixins: [
+    DbConnection({
+      collection: 'subscriptions',
+      entityChangedOldEntity: true,
+    }),
+    PostgisMixin({ srid: LKS_SRID }),
+  ],
   settings: {
     fields: {
       id: {
@@ -360,6 +371,39 @@ export default class SubscriptionsService extends moleculer.Service {
     }
 
     return countBySubscriptions;
+  }
+
+  @Event()
+  async 'subscriptions.*'(ctx: Context<EntityChangedParams<Subscription>>) {
+    const type = ctx.params.type;
+    const subscription = ctx.params.data;
+    const subscriptionOld = ctx.params.oldData;
+    const id = subscription.id;
+
+    if (!id) return;
+    if (subscription.geom === subscriptionOld?.geom) return;
+
+    switch (type) {
+      case 'create':
+      case 'update':
+      case 'replace':
+        const eventsCounts = await this.actions.getEventsCount({
+          id,
+          mapping: true,
+        });
+
+        await this.updateEntity(
+          ctx,
+          {
+            id,
+            eventsCount: eventsCounts[id],
+          },
+          {
+            permissive: true,
+          },
+        );
+        break;
+    }
   }
 
   @Event()
