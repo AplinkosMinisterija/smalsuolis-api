@@ -3,7 +3,7 @@
 import { FeatureCollection, parse } from 'geojsonjs';
 import _ from 'lodash';
 import moleculer, { Context, GenericObject } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
+import { Action, Event, Method, Service } from 'moleculer-decorators';
 import PostgisMixin, { asGeoJsonQuery, intersectsQuery } from 'moleculer-postgis';
 import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
 import DbConnection from '../mixins/database.mixin';
@@ -67,9 +67,15 @@ export type Subscription<
         populate: 'users.resolve',
         onCreate: async ({ ctx }: FieldHookCallback) => ctx.meta.user?.id,
         onUpdate: async ({ ctx, entity }: FieldHookCallback) => {
-          if (entity.userId !== ctx.meta.user?.id) {
+          // Allow service updates
+          if (!ctx.meta?.user?.id) {
+            return entity.userId;
+          }
+
+          if (entity.userId !== ctx.meta.user.id) {
             return throwNoRightsError('Unauthorized');
           }
+
           return entity.userId;
         },
       },
@@ -124,14 +130,13 @@ export type Subscription<
       },
 
       eventsCount: {
-        virtual: true,
-        populate: {
-          keyField: 'id',
-          handler: (ctx: Context, values: any[]) => {
-            if (!values?.length) return;
-            return ctx.call('subscriptions.getEventsCount', { id: values, mapping: true });
-          },
+        type: 'object',
+        readonly: true,
+        properties: {
+          allTime: 'number',
+          new: 'number',
         },
+        get: ({ value }: FieldHookCallback) => value || { allTime: 0, new: 0 },
       },
 
       frequency: {
@@ -355,6 +360,29 @@ export default class SubscriptionsService extends moleculer.Service {
     }
 
     return countBySubscriptions;
+  }
+
+  @Event()
+  async 'integrations.sync.finished'(ctx: Context) {
+    const allSubscriptions: Array<Subscription<null, 'id'>> = await this.findEntities(ctx, {
+      fields: 'id',
+    });
+
+    const allIds = allSubscriptions.map((s) => s.id);
+    const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
+
+    for (const id in eventsCounts) {
+      await this.updateEntity(
+        ctx,
+        {
+          id,
+          eventsCount: eventsCounts[id],
+        },
+        {
+          permissive: true,
+        },
+      );
+    }
   }
 
   @Method
