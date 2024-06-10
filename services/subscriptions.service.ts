@@ -374,11 +374,7 @@ export default class SubscriptionsService extends moleculer.Service {
   }
 
   @Method
-  updateEventsCountCache(
-    ctx: Context,
-    id: Subscription['id'],
-    eventsCount: Subscription['eventsCount'],
-  ) {
+  cacheEventsCount(ctx: Context, id: Subscription['id'], eventsCount: Subscription['eventsCount']) {
     return this.updateEntity(
       ctx,
       {
@@ -415,7 +411,7 @@ export default class SubscriptionsService extends moleculer.Service {
           mapping: true,
         });
 
-        await this.updateEventsCountCache(ctx, id, eventsCounts[id]);
+        await this.cacheEventsCount(ctx, id, eventsCounts[id]);
         break;
     }
   }
@@ -430,7 +426,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
 
     for (const id in eventsCounts) {
-      await this.updateEventsCountCache(ctx, Number(id), eventsCounts[id]);
+      await this.cacheEventsCount(ctx, Number(id), eventsCounts[id]);
     }
   }
 
@@ -476,7 +472,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
 
     for (const id in eventsCounts) {
-      await this.updateEventsCountCache(null, Number(id), eventsCounts[id]);
+      await this.cacheEventsCount(null, Number(id), eventsCounts[id]);
     }
   }
 }
