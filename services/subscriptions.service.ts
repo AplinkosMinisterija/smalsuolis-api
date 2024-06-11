@@ -54,7 +54,6 @@ export type Subscription<
   mixins: [
     DbConnection({
       collection: 'subscriptions',
-      entityChangedOldEntity: true,
     }),
     PostgisMixin({ srid: LKS_SRID }),
   ],
@@ -141,13 +140,9 @@ export type Subscription<
       },
 
       eventsCount: {
-        type: 'object',
+        type: 'any',
         readonly: true,
-        properties: {
-          allTime: 'number',
-          new: 'number',
-        },
-        get: ({ value }: FieldHookCallback) => value || { allTime: 0, new: 0 },
+        set: () => null,
       },
 
       frequency: {
@@ -396,11 +391,11 @@ export default class SubscriptionsService extends moleculer.Service {
   async 'subscriptions.*'(ctx: Context<EntityChangedParams<Subscription>>) {
     const type = ctx.params.type;
     const subscription = ctx.params.data;
-    const subscriptionOld = ctx.params.oldData;
     const id = subscription.id;
 
     if (!id) return;
-    if (subscription.geom === subscriptionOld?.geom) return;
+
+    if (subscription.eventsCount) return;
 
     switch (type) {
       case 'create':
