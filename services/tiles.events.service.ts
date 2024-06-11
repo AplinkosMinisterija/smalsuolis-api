@@ -379,7 +379,7 @@ export default class TilesEventsService extends moleculer.Service {
   }
 
   @Event()
-  async 'tiles.events.renew'() {
+  async 'integrations.sync.finished'() {
     this.superclustersPromises = {};
     await this.renewSuperclusterIndex();
   }

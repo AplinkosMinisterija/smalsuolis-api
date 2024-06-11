@@ -172,7 +172,7 @@ export default class DatagovService extends moleculer.Service {
       }
     } while (response?._data?.length);
 
-    this.broker.emit('tiles.events.renew');
+    this.broker.emit('integrations.sync.finished');
     return stats;
   }
 

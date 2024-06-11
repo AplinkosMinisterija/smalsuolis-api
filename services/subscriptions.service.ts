@@ -3,7 +3,7 @@
 import { FeatureCollection, parse } from 'geojsonjs';
 import _ from 'lodash';
 import moleculer, { Context, GenericObject } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
+import { Action, Event, Method, Service } from 'moleculer-decorators';
 import PostgisMixin, { asGeoJsonQuery, intersectsQuery } from 'moleculer-postgis';
 import { PopulateHandlerFn } from 'moleculer-postgis/src/mixin';
 import DbConnection from '../mixins/database.mixin';
@@ -19,6 +19,7 @@ import {
   Table,
   throwNoRightsError,
   UserAuthMeta,
+  EntityChangedParams,
 } from '../types';
 import { LKS_SRID } from '../utils';
 import { App } from './apps.service';
@@ -32,6 +33,10 @@ interface Fields extends CommonFields {
   frequency: Frequency;
   active: boolean;
   geomWithBuffer?: FeatureCollection;
+  eventsCount?: {
+    allTime: number;
+    new: number;
+  };
 }
 
 interface Populates extends CommonPopulates {
@@ -46,7 +51,12 @@ export type Subscription<
 
 @Service({
   name: 'subscriptions',
-  mixins: [DbConnection({ collection: 'subscriptions' }), PostgisMixin({ srid: LKS_SRID })],
+  mixins: [
+    DbConnection({
+      collection: 'subscriptions',
+    }),
+    PostgisMixin({ srid: LKS_SRID }),
+  ],
   settings: {
     fields: {
       id: {
@@ -67,9 +77,15 @@ export type Subscription<
         populate: 'users.resolve',
         onCreate: async ({ ctx }: FieldHookCallback) => ctx.meta.user?.id,
         onUpdate: async ({ ctx, entity }: FieldHookCallback) => {
-          if (entity.userId !== ctx.meta.user?.id) {
+          // Allow service updates
+          if (!ctx.meta?.user?.id) {
+            return entity.userId;
+          }
+
+          if (entity.userId !== ctx.meta.user.id) {
             return throwNoRightsError('Unauthorized');
           }
+
           return entity.userId;
         },
       },
@@ -124,14 +140,9 @@ export type Subscription<
       },
 
       eventsCount: {
-        virtual: true,
-        populate: {
-          keyField: 'id',
-          handler: (ctx: Context, values: any[]) => {
-            if (!values?.length) return;
-            return ctx.call('subscriptions.getEventsCount', { id: values, mapping: true });
-          },
-        },
+        type: 'any',
+        readonly: true,
+        set: () => null,
       },
 
       frequency: {
@@ -144,8 +155,8 @@ export type Subscription<
     },
     scopes: {
       user(query: any, ctx: Context<null, UserAuthMeta>, params: any) {
+        if (!ctx?.meta?.user?.id) return query;
         const { user } = ctx.meta;
-        if (!user?.id) return query;
         query.user = user.id;
         return query;
       },
@@ -260,7 +271,7 @@ export default class SubscriptionsService extends moleculer.Service {
     const { id, mapping } = ctx.params;
     const ids = Array.isArray(id) ? id : [id];
 
-    await ctx.call('subscriptions.resolve', { id: ids, throwIfNotExist: true });
+    await this.resolveEntities(ctx, { id: ids, throwIfNotExist: true });
 
     const adapter = await this.getAdapter(ctx);
 
@@ -358,6 +369,63 @@ export default class SubscriptionsService extends moleculer.Service {
   }
 
   @Method
+  cacheEventsCount(ctx: Context, id: Subscription['id'], eventsCount: Subscription['eventsCount']) {
+    return this.updateEntity(
+      ctx,
+      {
+        id,
+        $set: {
+          eventsCount,
+        },
+      },
+      {
+        // will set only eventsCount, without modifying updatedBy and other fields
+        raw: true,
+        // eventsCount - readonly field and modified only there
+        permissive: true,
+      },
+    );
+  }
+
+  @Event()
+  async 'subscriptions.*'(ctx: Context<EntityChangedParams<Subscription>>) {
+    const type = ctx.params.type;
+    const subscription = ctx.params.data;
+    const id = subscription.id;
+
+    if (!id) return;
+
+    if (subscription.eventsCount) return;
+
+    switch (type) {
+      case 'create':
+      case 'update':
+      case 'replace':
+        const eventsCounts = await this.actions.getEventsCount({
+          id,
+          mapping: true,
+        });
+
+        await this.cacheEventsCount(ctx, id, eventsCounts[id]);
+        break;
+    }
+  }
+
+  @Event()
+  async 'integrations.sync.finished'(ctx: Context) {
+    const allSubscriptions: Array<Subscription<null, 'id'>> = await this.findEntities(ctx, {
+      fields: 'id',
+    });
+
+    const allIds = allSubscriptions.map((s) => s.id);
+    const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
+
+    for (const id in eventsCounts) {
+      await this.cacheEventsCount(ctx, Number(id), eventsCounts[id]);
+    }
+  }
+
+  @Method
   async validateApps({ ctx, value, entity }: FieldHookCallback) {
     const apps: App[] = await ctx.call('apps.find', {
       query: {
@@ -377,6 +445,29 @@ export default class SubscriptionsService extends moleculer.Service {
     const subscription = await this.findEntity(ctx, { id: ctx.params.id });
     if (subscription?.user !== ctx.meta.user.id) {
       throwNoRightsError();
+    }
+  }
+
+  async started() {
+    const subscriptionsWithoutCache: Array<Subscription<null, 'id'>> = await this.findEntities(
+      null,
+      {
+        query: {
+          eventsCount: {
+            $exists: false,
+          },
+        },
+        fields: ['id'],
+      },
+    );
+
+    if (!subscriptionsWithoutCache.length) return;
+
+    const allIds = subscriptionsWithoutCache.map((s) => s.id);
+    const eventsCounts = await this.actions.getEventsCount({ id: allIds, mapping: true });
+
+    for (const id in eventsCounts) {
+      await this.cacheEventsCount(null, Number(id), eventsCounts[id]);
     }
   }
 }

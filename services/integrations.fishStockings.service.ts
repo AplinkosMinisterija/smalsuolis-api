@@ -197,7 +197,7 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
       }
     }
 
-    this.broker.emit('tiles.events.renew');
+    this.broker.emit('integrations.sync.finished');
     return stats;
   }
 }
