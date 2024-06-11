@@ -142,6 +142,10 @@ export default class DatagovService extends moleculer.Service {
           externalId: entry._id,
         };
 
+        if (entry.uuid) {
+          event.url = `https://infostatyba.planuojustatau.lt/eInfostatyba-external/projectObject/projectObjectMain?uuid=${entry.uuid}`;
+        }
+
         stats.valid.total++;
 
         const existingEvent: Event = await ctx.call('events.findOne', {
