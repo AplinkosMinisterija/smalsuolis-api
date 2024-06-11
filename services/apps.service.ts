@@ -11,6 +11,12 @@ import {
   CommonFields,
 } from '../types';
 
+export enum APP_TYPES {
+  infostatyba = 'infostatyba',
+  izuvinimas = 'izuvinimas',
+  miskoKirtimai = 'miskoKirtimai',
+}
+
 export interface App extends CommonFields {
   name: string;
   key: string;
@@ -18,33 +24,6 @@ export interface App extends CommonFields {
   description: string;
   icon: string;
 }
-
-export const APPS = {
-  'infostatyba-naujas': {
-    type: 'infostatyba',
-    name: 'Statinio statyba',
-    description: 'Naujų statinių statybos leidimai',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
-  },
-  'infostatyba-remontas': {
-    type: 'infostatyba',
-    name: 'Statinio remontas/rekonstravimas',
-    description: 'Statinių kapitalinių ir paprastųjų remontų arba rekonstravimų leidimai',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
-  },
-  'infostatyba-griovimas': {
-    type: 'infostatyba',
-    name: 'Statinio griovimas',
-    description: 'Statinių griovimo leidimai',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
-  },
-  'infostatyba-paskirties-keitimas': {
-    type: 'infostatyba',
-    name: 'Statinio/patalpų paskirties keitimas',
-    description: 'Statinių/patalpų paskirties keitimų leidimai - statybos darbai neatliekami',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
-  },
-};
 
 @Service({
   name: 'apps',
@@ -65,11 +44,6 @@ export const APPS = {
       name: 'string|required',
       description: 'string|required',
       icon: 'string|required',
-      apiKey: {
-        type: 'string',
-        hidden: true,
-      },
-      ...COMMON_FIELDS,
     },
     scopes: {
       ...COMMON_SCOPES,
@@ -77,14 +51,26 @@ export const APPS = {
     defaultScopes: [...COMMON_DEFAULT_SCOPES],
   },
   actions: {
+    list: {
+      auth: EndpointType.PUBLIC,
+    },
+    find: {
+      auth: EndpointType.PUBLIC,
+    },
+    get: {
+      auth: EndpointType.PUBLIC,
+    },
+    count: {
+      auth: EndpointType.PUBLIC,
+    },
     create: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
     update: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
     remove: {
-      auth: EndpointType.ADMIN,
+      rest: null,
     },
   },
 })

@@ -14,6 +14,7 @@ import {
   UserAuthMeta,
   CommonFields,
   UserType,
+  throwBadRequestError,
 } from '../types';
 
 const VISIBLE_TO_USER_SCOPE = 'tenant';
@@ -144,6 +145,16 @@ export default class UsersService extends moleculer.Service {
     >,
   ) {
     const authGroupId: number = Number(process.env.AUTH_GROUP_ID);
+
+    const userExists: User = await ctx.call('users.findOne', {
+      query: {
+        email: ctx.params.email,
+      },
+    });
+
+    if (userExists?.id) {
+      return throwBadRequestError('User already exists.', 'USER_EXISTS');
+    }
 
     const inviteData = {
       apps: [ctx.meta.app.id],

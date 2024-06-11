@@ -2,12 +2,19 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { Event } from './events.service';
+import { Event, toEventBodyMarkdown } from './events.service';
 import { parse } from 'geojsonjs';
-import { App } from './apps.service';
+import { APP_TYPES, App } from './apps.service';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
+
+export enum DATAGOV_APPS {
+  infostatybaNaujas = `${APP_TYPES.infostatyba}-naujas`,
+  infostatybaRemontas = `${APP_TYPES.infostatyba}-remontas`,
+  infostatybaGriovimas = `${APP_TYPES.infostatyba}-griovimas`,
+  infostatybaPaskirtiesKeitimas = `${APP_TYPES.infostatyba}-paskirties-keitimas`,
+}
 
 @Service({
   name: 'datagov',
@@ -67,9 +74,10 @@ export default class DatagovService extends moleculer.Service {
       'sort(_id)',
       `(${dokTipasQuery})`,
       'dok_statusas="Galiojantis"',
-      'iraso_data!=null',
+      'dokumento_reg_data!=null',
       'taskas_wgs!=null',
       'taskas_lks!=null',
+      'dokumento_reg_data>"2021-11-01"',
     ]
       .map((i) => encodeURIComponent(i))
       .join('&');
@@ -95,7 +103,7 @@ export default class DatagovService extends moleculer.Service {
         skipParamString = `&_id>'${entry._id}'`;
         stats.total++;
 
-        if (!entry.iraso_data) {
+        if (!entry.dokumento_reg_data) {
           stats.invalid.total++;
           stats.invalid.no_date++;
           continue;
@@ -116,27 +124,34 @@ export default class DatagovService extends moleculer.Service {
           continue;
         }
 
+        const bodyJSON = [
+          { title: 'Projekto pavadinimas', value: entry.projekto_pavadinimas },
+          { title: 'Adresas', value: entry.adresas },
+          { title: 'Statinio kategorija', value: entry.statinio_kategorija || '-' },
+          { title: 'Statybos rūšis', value: entry.statybos_rusis || '-' },
+          { title: 'Statinio pavadinimas', value: entry.statinio_pavadinimas || '-' },
+        ];
+
         const event: Partial<Event> = {
-          name: entry.projekto_pavadinimas,
-          body: [
-            `**Projekto pavadinimas:** ${entry.projekto_pavadinimas}`,
-            `**Adresas:** ${entry.adresas}`,
-            `**Statinio kategorija:** ${entry.statinio_kategorija || '-'}`,
-            `**Statybos rūšis:** ${entry.statybos_rusis || '-'}`,
-            `**Statinio pavadinimas:** ${entry.statinio_pavadinimas || '-'}`,
-          ].join('\n\n'),
-          startAt: new Date(entry.iraso_data),
+          name: `${entry.statinio_pavadinimas}, ${entry.adresas}`,
+          body: toEventBodyMarkdown(bodyJSON),
+          startAt: new Date(entry.dokumento_reg_data),
           geom,
           app: appIdByDokType[entry.dok_tipo_kodas],
           isFullDay: true,
           externalId: entry._id,
         };
 
+        if (entry.uuid) {
+          event.url = `https://infostatyba.planuojustatau.lt/eInfostatyba-external/projectObject/projectObjectMain?uuid=${entry.uuid}`;
+        }
+
         stats.valid.total++;
 
         const existingEvent: Event = await ctx.call('events.findOne', {
           query: {
             externalId: event.externalId,
+            app: appIdByDokType[entry.dok_tipo_kodas],
           },
         });
 
@@ -157,14 +172,23 @@ export default class DatagovService extends moleculer.Service {
       }
     } while (response?._data?.length);
 
+    this.broker.emit('tiles.events.renew');
     return stats;
   }
 
   @Method
   async getInfostatybaDokTypesData(ctx: Context) {
     const dokTypesByAppKey = {
-      'infostatyba-naujas': ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
-      'infostatyba-remontas': [
+      [DATAGOV_APPS.infostatybaNaujas]: [
+        'LSNS',
+        'SLRTV',
+        'SLRIE',
+        'SLRKS',
+        'SSIYV',
+        'SBEOS',
+        'SNSPJ',
+      ],
+      [DATAGOV_APPS.infostatybaRemontas]: [
         'LSKR',
         'KRBES',
         'LSPR',
@@ -176,8 +200,8 @@ export default class DatagovService extends moleculer.Service {
         'RSIYV',
         'RBEOS',
       ],
-      'infostatyba-griovimas': ['LGS', 'GBEOS'],
-      'infostatyba-paskirties-keitimas': ['LPSP'],
+      [DATAGOV_APPS.infostatybaGriovimas]: ['LGS', 'GBEOS'],
+      [DATAGOV_APPS.infostatybaPaskirtiesKeitimas]: ['LPSP'],
     };
 
     const appIdByKey: { [key: string]: App['id'] } = await ctx.call('apps.find', {

@@ -40,10 +40,13 @@ jobs:
 
   validate-docker-build:
     name: Validate if docker image builds
-    uses: AplinkosMinisterija/reusable-workflows/.github/workflows/docker-build-push.yml@main
-    with:
-      docker-image: ghcr.io/aplinkosministerija/example
-      environment: test
-      runs-on: biip-workflows
-      latest-tag: true
-      push: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build & tag docker image
+        uses: AplinkosMinisterija/reusable-workflows/.github/actions/docker-build-tag-push@main
+        with:
+          environment: test
+          push: false

@@ -1,44 +1,19 @@
 'use strict';
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
-import { Frequency, FrequencyLabel, QueryObject, UserAuthMeta } from '../types';
-import {
-  parseToJsonIfNeeded,
-  emailCanBeSent,
-  getDateByFrequency,
-  truncateString,
-  LKS_SRID,
-} from '../utils';
+import { Frequency, FrequencyLabel, UserAuthMeta } from '../types';
+import { parseToJsonIfNeeded, emailCanBeSent, getDateByFrequency, truncateString } from '../utils';
 import { Subscription } from './subscriptions.service';
-import { Event } from './events.service';
+import { Event, applyEventsQueryBySubscriptions } from './events.service';
 import { format } from 'date-fns/format';
 import { lt } from 'date-fns/locale';
 import { ServerClient } from 'postmark';
 import { User } from './users.service';
-import { intersectsQuery } from 'moleculer-postgis';
+import showdown from 'showdown';
 
 const Cron = require('@r2d2bzh/moleculer-cron');
 
-const sender = 'noreply@biip.lt';
-
-// returns query with apps and geom filtering based on provided subscriptions.
-function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[]) {
-  if (!subscriptions?.length) {
-    query.$or = { app: { $in: [] } };
-    return query;
-  }
-  const subscriptionQuery = subscriptions.map((subscription) => ({
-    ...(!!subscription.apps?.length && { app: { $in: subscription.apps } }),
-    $raw: intersectsQuery('geom', subscription.geomWithBuffer, LKS_SRID),
-  }));
-  if (query?.$or) {
-    query.$and = [query?.$or, { $or: subscriptionQuery }];
-    delete query?.$or;
-  } else {
-    query.$or = subscriptionQuery;
-  }
-  return query;
-}
+const sender = 'esu@smalsuolis.lt';
 
 @Service({
   name: 'newsfeed',
@@ -47,6 +22,7 @@ function applyNewsfeedFilters(query: QueryObject, subscriptions: Subscription[])
     before: {
       list: ['applyFilters'],
       find: ['applyFilters'],
+      count: ['applyFilters'],
       get: ['applyFilters'],
       resolve: ['applyFilters'],
     },
@@ -83,37 +59,36 @@ export default class NewsfeedService extends moleculer.Service {
     rest: 'GET /',
   })
   async list(ctx: Context<any, UserAuthMeta>) {
-    return ctx.call('events.list', {
-      ...ctx.params,
-    });
+    return ctx.call('events.list', ctx.params);
   }
 
   @Action()
   async find(ctx: Context<any, UserAuthMeta>) {
-    return ctx.call('events.find', {
-      ...ctx.params,
-    });
+    return ctx.call('events.find', ctx.params);
   }
 
-  @Action()
+  @Action({
+    rest: 'GET /:id',
+  })
   async get(ctx: Context<any, UserAuthMeta>) {
-    const { id } = ctx.params;
-    return ctx.call('events.get', {
-      ...ctx.params,
-      id,
-    });
+    return ctx.call('events.get', ctx.params);
   }
 
   @Action()
   async resolve(ctx: Context<any, UserAuthMeta>) {
-    const { id } = ctx.params;
-    return ctx.call('events.resolve', {
-      ...ctx.params,
-      id,
-    });
+    return ctx.call('events.resolve', ctx.params);
   }
 
-  @Action()
+  @Action({
+    rest: 'GET /count',
+  })
+  async count(ctx: Context<any, UserAuthMeta>) {
+    return ctx.call('events.count', ctx.params);
+  }
+
+  @Action({
+    timeout: 0,
+  })
   async handleEmails(ctx: Context<{ frequency: Frequency }>) {
     if (!emailCanBeSent()) return;
     const frequency = ctx.params.frequency;
@@ -146,14 +121,21 @@ export default class NewsfeedService extends moleculer.Service {
       },
       {},
     );
+
+    const markdownConverter = new showdown.Converter();
+
     // for each user
     for (const key in subscriptionsMap) {
       const data = subscriptionsMap[key];
-      const query = applyNewsfeedFilters({}, data.subscriptions);
+      if (!data?.subscriptions?.length) {
+        continue;
+      }
+
+      const query = applyEventsQueryBySubscriptions({}, data.subscriptions);
       //select events
       const events: Event<'app'>[] = await this.broker.call('events.find', {
         query: {
-          startAt: { $gt: date },
+          createdAt: { $gt: date },
           ...query,
         },
         fields: ['id', 'app', 'name', 'body', 'startAt'],
@@ -164,15 +146,35 @@ export default class NewsfeedService extends moleculer.Service {
       if (!events.length) {
         continue;
       }
+
+      function formatDateByEvent(e: Event<'app'>) {
+        const dayFormat = "yyyy 'm.' MMMM d 'd.'";
+        const dayAndTimeFormat = `${dayFormat} HH:mm`;
+
+        const startDate = e.startAt
+          ? format(new Date(e.startAt), e.isFullDay ? dayFormat : dayAndTimeFormat, {
+              locale: lt,
+            })
+          : '';
+
+        const endDate = e.endAt
+          ? format(new Date(e.endAt), e.isFullDay ? dayFormat : dayAndTimeFormat, {
+              locale: lt,
+            })
+          : '';
+
+        if (!startDate) return '';
+        else if (!endDate) return startDate;
+        return `${startDate} - ${endDate}`;
+      }
+
       // otherwise send email
       const mappedEvents = events.slice(0, 6).map((e) => ({
         app_name: e.app.name,
         event_name: e.name,
-        date: format(new Date(e.startAt), "yyyy 'm.' MMMM d 'd.'", {
-          locale: lt,
-        }),
-        event_content: truncateString(e.body, 500),
-        url: e.url,
+        date: formatDateByEvent(e),
+        event_content: markdownConverter.makeHtml(truncateString(e.body, 500)),
+        url: e.url || `${process.env.APP_HOST}/visos-naujienos/${e.id}`,
       }));
       const content = {
         From: sender,
@@ -182,7 +184,7 @@ export default class NewsfeedService extends moleculer.Service {
           frequency: FrequencyLabel[frequency],
           total_events: events.length,
           events: mappedEvents,
-          action_url: 'https://smalsuolis.lt', //TODO: replace with the actual link
+          action_url: `${process.env.APP_HOST}/mano-naujienos`,
         },
       };
       await this.client.sendEmailWithTemplate(content);
@@ -194,15 +196,31 @@ export default class NewsfeedService extends moleculer.Service {
     ctx.params.query = parseToJsonIfNeeded(ctx.params.query) || {};
     const { user } = ctx.meta;
 
+    const query: any = {
+      user: user.id,
+      active: true,
+    };
+
+    // we need to filter subscriptions in the first place
+    if (ctx.params.query.subscription) {
+      query.id = ctx.params.query.subscription;
+      delete ctx.params.query.subscription;
+    }
+
     const subscriptions: Subscription[] = await ctx.call('subscriptions.find', {
-      query: {
-        user: user.id,
-        active: true,
-      },
-      populate: ['geomWithBuffer'],
+      query,
+      fields: ['id'],
     });
 
-    ctx.params.query = applyNewsfeedFilters(ctx.params.query, subscriptions);
+    if (!subscriptions?.length) {
+      // TODO: hack for returning 0 items
+      ctx.params.query.$or = { app: { $in: [] } };
+      return ctx;
+    }
+
+    ctx.params.query.subscription = {
+      $in: subscriptions?.map((i) => i.id),
+    };
 
     return ctx;
   }
