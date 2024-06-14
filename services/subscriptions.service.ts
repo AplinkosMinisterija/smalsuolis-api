@@ -266,6 +266,7 @@ export default class SubscriptionsService extends moleculer.Service {
       id: ['number|convert', { type: 'array', items: 'number|convert' }],
       mapping: 'boolean|optional',
     },
+    timeout: 0,
   })
   async getEventsCount(ctx: Context<{ id: number | number[]; mapping?: boolean }>) {
     const { id, mapping } = ctx.params;
