@@ -58,7 +58,7 @@ interface FishStocking {
   crons: [
     {
       name: 'integrationsFishStockings',
-      cronTime: '0 12 * * *',
+      cronTime: '0 3 * * *',
       timeZone: 'Europe/Vilnius',
       async onTick() {
         await this.call('integrations.fishStockings.getData', {

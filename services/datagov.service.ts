@@ -27,7 +27,7 @@ export enum DATAGOV_APPS {
   crons: [
     {
       name: 'infostatyba',
-      cronTime: '0 3 * * *',
+      cronTime: '0 7 * * *',
       timeZone: 'Europe/Vilnius',
 
       async onTick() {
