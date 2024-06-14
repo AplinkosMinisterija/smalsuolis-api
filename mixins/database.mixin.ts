@@ -4,7 +4,7 @@ import _ from 'lodash';
 const DbService = require('@moleculer/database').Service;
 import config from '../knexfile';
 import filtersMixin from 'moleculer-knex-filters';
-import { Context } from 'moleculer';
+import moleculer, { Context } from 'moleculer';
 import { parseToJsonIfNeeded } from '../utils';
 
 export const MaterializedView = {
@@ -19,7 +19,7 @@ function makeMapping(
   options?: {
     mappingMulti?: boolean;
     mappingField?: string;
-  }
+  },
 ) {
   if (!mapping) return data;
 
@@ -93,10 +93,9 @@ export default function (opts: any = {}) {
           mapping?: boolean;
           mappingMulti?: boolean;
           mappingField: string;
-        }>
+        }>,
       ): Promise<any> {
-        const { id, queryKey, query, mapping, mappingMulti, mappingField } =
-          ctx.params;
+        const { id, queryKey, query, mapping, mappingMulti, mappingField } = ctx.params;
 
         delete ctx.params.queryKey;
         delete ctx.params.id;
@@ -123,9 +122,7 @@ export default function (opts: any = {}) {
       filterQueryIds(ids: number[], queryIds?: any) {
         if (!queryIds) return ids;
 
-        queryIds = (Array.isArray(queryIds) ? queryIds : [queryIds]).map(
-          (id: any) => parseInt(id)
-        );
+        queryIds = (Array.isArray(queryIds) ? queryIds : [queryIds]).map((id: any) => parseInt(id));
 
         return ids.filter((id) => queryIds.indexOf(id) >= 0);
       },
@@ -139,9 +136,7 @@ export default function (opts: any = {}) {
         };
       },
 
-      async applyFilterFunction(
-        ctx: Context<{ query: { [key: string]: any } }>
-      ) {
+      async applyFilterFunction(ctx: Context<{ query: { [key: string]: any } }>) {
         ctx.params.query = parseToJsonIfNeeded(ctx.params.query);
 
         if (!ctx.params?.query) {
@@ -151,9 +146,7 @@ export default function (opts: any = {}) {
         for (const key of Object.keys(ctx.params.query)) {
           if (this.settings?.fields?.[key]?.filterFn) {
             if (typeof this.settings?.fields?.[key]?.filterFn === 'function') {
-              ctx.params.query[key] = await this.settings?.fields?.[
-                key
-              ]?.filterFn({
+              ctx.params.query[key] = await this.settings?.fields?.[key]?.filterFn({
                 value: ctx.params.query[key],
                 query: ctx.params.query,
               });
@@ -178,7 +171,7 @@ export default function (opts: any = {}) {
               mappingMulti: boolean;
               mappingField: string;
             }>,
-            data: any[]
+            data: any[],
           ) {
             const { mapping, mappingMulti, mappingField } = ctx.params;
             return makeMapping(data, mapping, {

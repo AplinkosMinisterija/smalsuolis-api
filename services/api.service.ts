@@ -1,7 +1,7 @@
 import { User } from '@sentry/types';
 import pick from 'lodash/pick';
 import moleculer, { Context, Errors } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
+import { Method, Service } from 'moleculer-decorators';
 import ApiGateway from 'moleculer-web';
 import {
   EndpointType,
@@ -10,10 +10,12 @@ import {
   UserAuthMeta,
   UserType,
 } from '../types';
+import Ping, { PingServices } from '../mixins/ping.mixin';
+import dbConfig from '../knexfile';
 
 @Service({
   name: 'api',
-  mixins: [ApiGateway],
+  mixins: [ApiGateway, Ping({ dbConfig, whitelist: [PingServices.DATABASE, PingServices.REDIS] })],
   // More info about settings: https://moleculer.services/docs/0.14/moleculer-web.html
   settings: {
     port: process.env.PORT || 3000,
@@ -109,15 +111,6 @@ import {
   },
 })
 export default class ApiService extends moleculer.Service {
-  @Action({
-    auth: EndpointType.PUBLIC,
-  })
-  ping() {
-    return {
-      timestamp: Date.now(),
-    };
-  }
-
   @Method
   async rejectAuth(
     ctx: Context<Record<string, unknown>>,
