@@ -43,6 +43,7 @@ ARG ENVIRONMENT
 ENV ENVIRONMENT=${ENVIRONMENT}
 
 # Set default environment variables
+ENV SERVICEDIR=dist/services
 ENV NODE_ENV=production
 ENV TZ=Etc/GMT
 
