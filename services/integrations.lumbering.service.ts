@@ -9,13 +9,14 @@ import unzipper from 'unzipper';
 import stream from 'node:stream';
 
 import { Event, toEventBodyMarkdown } from './events.service';
+import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
 @Service({
   name: 'integrations.lumbering',
   settings: {
     zipUrl: 'https://lkmp.alisas.lt/static/lkmp-data.geojson.zip',
   },
-  mixins: [Cron],
+  mixins: [Cron, IntegrationsMixin()],
   crons: [
     {
       name: 'integrationsLumbering',
@@ -130,6 +131,12 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
       ];
 
+      const tagsIds: number[] = await this.findOrCreateTags(
+        ctx,
+        [feature.properties.kirtimo_rusis],
+        APP_TYPES.miskoKirtimai,
+      );
+
       const event: Partial<Event> = {
         name: `${feature.properties.kirtimo_rusis}, ${feature.properties.girininkija} girininkija, ${feature.properties.padalinys} r.p.`,
         body: toEventBodyMarkdown(bodyJSON),
@@ -139,6 +146,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         app: app.id,
         isFullDay: true,
         externalId: feature.properties.id,
+        tags: tagsIds,
       };
 
       if (ctx.params.initial) {

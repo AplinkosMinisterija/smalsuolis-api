@@ -18,6 +18,7 @@ import {
 import { App } from './apps.service';
 import { LKS_SRID, parseToJsonIfNeeded } from '../utils';
 import { Subscription } from './subscriptions.service';
+import { Tag } from './tags.service';
 
 interface Fields extends CommonFields {
   app: number;
@@ -30,6 +31,8 @@ interface Fields extends CommonFields {
   endAt?: Date;
   isFullDay: boolean;
   externalId: string;
+  tags: number[];
+  tagsData: { [key: Tag['id']]: number };
 }
 
 export type EventBodyJSON = {
@@ -43,6 +46,7 @@ export function toEventBodyMarkdown(data: EventBodyJSON[]) {
 
 interface Populates extends CommonPopulates {
   app: App;
+  tags: Tag[];
 }
 
 export type Event<
@@ -114,6 +118,20 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
       isFullDay: {
         type: 'boolean',
         default: false,
+      },
+      tags: {
+        type: 'array',
+        populate: {
+          action: 'tags.resolve',
+          params: {
+            fields: ['id', 'name'],
+          },
+        },
+        default: [],
+      },
+      tagsData: {
+        type: 'object',
+        hidden: 'byDefault',
       },
       ...COMMON_FIELDS,
     },

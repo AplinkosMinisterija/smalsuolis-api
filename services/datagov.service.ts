@@ -8,6 +8,7 @@ import { APP_TYPES, App } from './apps.service';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
+import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
 export enum DATAGOV_APPS {
   infostatybaNaujas = `${APP_TYPES.infostatyba}-naujas`,
@@ -22,7 +23,7 @@ export enum DATAGOV_APPS {
     baseUrl: 'https://get.data.gov.lt',
   },
 
-  mixins: [Cron],
+  mixins: [Cron, IntegrationsMixin()],
 
   crons: [
     {
@@ -132,6 +133,12 @@ export default class DatagovService extends moleculer.Service {
           { title: 'Statinio pavadinimas', value: entry.statinio_pavadinimas || '-' },
         ];
 
+        const tagsIds: number[] = await this.findOrCreateTags(
+          ctx,
+          [entry.statybos_rusis],
+          APP_TYPES.infostatyba,
+        );
+
         const event: Partial<Event> = {
           name: `${entry.statinio_pavadinimas}, ${entry.adresas}`,
           body: toEventBodyMarkdown(bodyJSON),
@@ -140,6 +147,7 @@ export default class DatagovService extends moleculer.Service {
           app: appIdByDokType[entry.dok_tipo_kodas],
           isFullDay: true,
           externalId: entry._id,
+          tags: tagsIds,
         };
 
         if (entry.uuid) {
