@@ -12,10 +12,11 @@ import {
   EndpointType,
   Table,
 } from '../types';
+import { APP_TYPE } from './apps.service';
 
 interface Fields extends CommonFields {
   name: string;
-  appKey: string;
+  appType: string;
 }
 
 interface Populates extends CommonPopulates {}
@@ -41,7 +42,12 @@ export type Tag<
         secure: true,
       },
       name: 'string|required',
-      appKey: 'string|required',
+
+      appType: {
+        type: 'string',
+        required: true,
+        enum: Object.values(APP_TYPE),
+      },
 
       apps: {
         type: 'array',
@@ -49,7 +55,7 @@ export type Tag<
         virtual: true,
         readonly: true,
         populate: {
-          keyField: 'appKey',
+          keyField: 'appType',
           handler: PopulateHandlerFn(`apps.populateByProp`),
           params: {
             queryKey: 'key',

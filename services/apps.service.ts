@@ -11,11 +11,29 @@ import {
   CommonFields,
 } from '../types';
 
-export enum APP_TYPES {
+enum APP_TYPES {
   infostatyba = 'infostatyba',
   izuvinimas = 'izuvinimas',
   miskoKirtimai = 'miskoKirtimai',
 }
+
+export const APP_KEYS = {
+  infostatybaNaujas: `${APP_TYPES.infostatyba}-naujas`,
+  infostatybaRemontas: `${APP_TYPES.infostatyba}-remontas`,
+  infostatybaGriovimas: `${APP_TYPES.infostatyba}-griovimas`,
+  infostatybaPaskirtiesKeitimas: `${APP_TYPES.infostatyba}-paskirties-keitimas`,
+  miskoKirtimai: APP_TYPES.miskoKirtimai,
+  izuvinimas: APP_TYPES.izuvinimas,
+};
+
+export const APP_TYPE = {
+  [APP_KEYS.infostatybaNaujas]: APP_TYPES.infostatyba,
+  [APP_KEYS.infostatybaGriovimas]: APP_TYPES.infostatyba,
+  [APP_KEYS.infostatybaRemontas]: APP_TYPES.infostatyba,
+  [APP_KEYS.infostatybaPaskirtiesKeitimas]: APP_TYPES.infostatyba,
+  [APP_KEYS.miskoKirtimai]: APP_TYPES.miskoKirtimai,
+  [APP_KEYS.izuvinimas]: APP_TYPES.izuvinimas,
+};
 
 export interface App extends CommonFields {
   name: string;
@@ -40,7 +58,11 @@ export interface App extends CommonFields {
         primaryKey: true,
         secure: true,
       },
-      key: 'string|required',
+      key: {
+        type: 'string',
+        required: true,
+        enum: Object.values(APP_KEYS),
+      },
       name: 'string|required',
       description: 'string|required',
       icon: 'string|required',

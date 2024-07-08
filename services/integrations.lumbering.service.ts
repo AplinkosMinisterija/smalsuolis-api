@@ -1,8 +1,8 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
-import { APP_TYPES, App } from './apps.service';
+import { Action, Service } from 'moleculer-decorators';
+import { App, APP_KEYS } from './apps.service';
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import unzipper from 'unzipper';
@@ -61,7 +61,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
-        key: APP_TYPES.miskoKirtimai,
+        key: APP_KEYS.miskoKirtimai,
       },
     });
 
@@ -134,7 +134,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
       const tagsIds: number[] = await this.findOrCreateTags(
         ctx,
         [feature.properties.kirtimo_rusis],
-        APP_TYPES.miskoKirtimai,
+        APP_KEYS.miskoKirtimai,
       );
 
       const event: Partial<Event> = {

@@ -9,7 +9,7 @@ exports.up = function (knex) {
     .createTable('tags', (table) => {
       table.increments('id');
       table.string('name');
-      table.string('appKey');
+      table.string('appType');
       commonFields(table);
     })
     .alterTable('events', (table) => {

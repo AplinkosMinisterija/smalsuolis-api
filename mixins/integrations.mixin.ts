@@ -1,5 +1,6 @@
 import { Context } from 'moleculer';
 import { Tag } from '../services/tags.service';
+import { APP_TYPE } from '../services/apps.service';
 
 export function IntegrationsMixin(opts: {} = {}) {
   const schema = {
@@ -8,9 +9,11 @@ export function IntegrationsMixin(opts: {} = {}) {
       async findOrCreateTags(ctx: Context, names: string[], appKey: string) {
         this.tags = this.tags || {};
 
+        const appType = APP_TYPE[appKey];
+
         if (!Object.keys(this.tags).length) {
           this.tags = await ctx.call('tags.find', {
-            query: { appKey },
+            query: { appType },
             mapping: 'name',
           });
         }
@@ -24,7 +27,7 @@ export function IntegrationsMixin(opts: {} = {}) {
         for (const name of names) {
           if (!this.tags[name]) {
             const tag: Tag = await ctx.call('tags.create', {
-              appKey,
+              appType,
               name,
             });
 
