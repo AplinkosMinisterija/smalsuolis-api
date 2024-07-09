@@ -137,6 +137,17 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         APP_KEYS.miskoKirtimai,
       );
 
+      const tagsData = [];
+
+      if (tagsIds.length && feature.properties.kertamas_plotas) {
+        const area = Math.round(Number(feature.properties.kertamas_plotas) * 100) / 100;
+        tagsData.push({
+          id: tagsIds[0],
+          name: 'area',
+          value: area,
+        });
+      }
+
       const event: Partial<Event> = {
         name: `${feature.properties.kirtimo_rusis}, ${feature.properties.girininkija} girininkija, ${feature.properties.padalinys} r.p.`,
         body: toEventBodyMarkdown(bodyJSON),
@@ -147,6 +158,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         isFullDay: true,
         externalId: feature.properties.id,
         tags: tagsIds,
+        tagsData,
       };
 
       if (ctx.params.initial) {

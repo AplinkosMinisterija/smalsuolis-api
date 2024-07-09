@@ -32,7 +32,7 @@ interface Fields extends CommonFields {
   isFullDay: boolean;
   externalId: string;
   tags: number[];
-  tagsData: { [key: Tag['id']]: number };
+  tagsData: { id: Tag['id']; name: string; value: number }[];
 }
 
 export type EventBodyJSON = {
@@ -130,8 +130,15 @@ export function applyEventsQueryBySubscriptions(query: QueryObject, subscription
         default: [],
       },
       tagsData: {
-        type: 'object',
-        hidden: 'byDefault',
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: 'number',
+            name: 'string',
+            value: 'number',
+          },
+        },
       },
       ...COMMON_FIELDS,
     },
