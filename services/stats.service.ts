@@ -10,7 +10,9 @@ import { App, APP_TYPE } from './apps.service';
   name: 'stats',
 })
 export default class StatsService extends moleculer.Service {
-  @Action()
+  @Action({
+    rest: 'GET /',
+  })
   async all(ctx: Context<{ query?: any }>) {
     const tagsById: { [key: string]: Tag } = await ctx.call('tags.find', { mapping: 'id' });
 
