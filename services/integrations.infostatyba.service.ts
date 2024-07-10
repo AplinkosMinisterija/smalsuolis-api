@@ -3,15 +3,16 @@
 import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
-import { parse } from 'geojsonjs';
 import { APP_KEYS, App } from './apps.service';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import { IntegrationsMixin } from '../mixins/integrations.mixin';
+import { wktToGeoJSON } from 'betterknown';
+import { addressesSearch } from '../utils/boundaries';
 
 @Service({
-  name: 'datagov',
+  name: 'integrations.infostatyba',
   settings: {
     baseUrl: 'https://get.data.gov.lt',
   },
@@ -20,19 +21,19 @@ import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
   crons: [
     {
-      name: 'infostatyba',
+      name: 'integrationsInfostatyba',
       cronTime: '0 7 * * *',
       timeZone: 'Europe/Vilnius',
 
       async onTick() {
-        await this.call('datagov.infostatyba', {
+        await this.call('integrations.infostatyba.getData', {
           limit: process.env.NODE_ENV === 'local' ? 100 : 0,
         });
       },
     },
   ],
 })
-export default class DatagovService extends moleculer.Service {
+export default class IntegrationsInfostatybaService extends moleculer.Service {
   @Action({
     timeout: 0,
     params: {
@@ -48,7 +49,7 @@ export default class DatagovService extends moleculer.Service {
       },
     },
   })
-  async infostatyba(ctx: Context<{ limit: number; initial: boolean }>) {
+  async getData(ctx: Context<{ limit: number; initial: boolean }>) {
     const { limit } = ctx.params;
 
     const stats = {
@@ -65,17 +66,15 @@ export default class DatagovService extends moleculer.Service {
       },
     };
 
-    const { dokTypes, appByDokType } = await this.getInfostatybaDokTypesData(ctx);
+    const { dokTypes, appByDokType } = await this.getDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
 
     const query = [
-      'limit(1000)',
+      `limit(${limit || '1000'})`,
       'sort(_id)',
       `(${dokTipasQuery})`,
       'dok_statusas="Galiojantis"',
       'dokumento_reg_data!=null',
-      'taskas_wgs!=null',
-      'taskas_lks!=null',
       'dokumento_reg_data>"2021-11-01"',
     ]
       .map((i) => encodeURIComponent(i))
@@ -98,6 +97,8 @@ export default class DatagovService extends moleculer.Service {
         },
       );
 
+      response._data = await this.resolveAddresses(ctx, response._data);
+
       for (let entry of response._data) {
         skipParamString = `&_id>'${entry._id}'`;
         stats.total++;
@@ -108,13 +109,9 @@ export default class DatagovService extends moleculer.Service {
           continue;
         }
 
-        const matches = entry.taskas_lks.match(/\(([\d]+[\.[\d]+]?) ([\d]+[\.[\d]+]?)\)/);
         let geom;
-        if (matches?.length) {
-          geom = parse({
-            type: 'Point',
-            coordinates: [Number(matches[2]), Number(matches[1])],
-          });
+        if (entry.address?.geom) {
+          geom = entry.address.geom;
         }
 
         if (!geom) {
@@ -189,7 +186,73 @@ export default class DatagovService extends moleculer.Service {
   }
 
   @Method
-  async getInfostatybaDokTypesData(ctx: Context) {
+  async resolveAddresses(ctx: Context, items: any[]) {
+    const statinioIdQuery = items
+      .map((i) => i.statinio_id)
+      .map((i) => `statinio_id="${i}"`)
+      .join('|');
+    const query = [`(${statinioIdQuery})`].map((i) => encodeURIComponent(i)).join('&');
+
+    const url =
+      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json?' + query;
+
+    const response: any = await ctx.call(
+      'http.get',
+      { url, opt: { responseType: 'json' } },
+      { timeout: 0 },
+    );
+
+    for (const index in response._data) {
+      const item = response._data[index];
+      if (!item?.gat_kodas || !item?.pastatas) continue;
+
+      const data = await addressesSearch({
+        requestBody: {
+          streets: {
+            codes: [item.gat_kodas],
+          },
+          addresses: {
+            plot_or_building_number: {
+              exact: item.pastatas,
+            },
+          },
+        },
+        srid: 4326,
+      });
+
+      const address = data?.items?.[0];
+
+      if (!address) continue;
+
+      const geom: any = wktToGeoJSON(address.geometry.data);
+
+      if (!geom) continue;
+
+      geom.crs = 'EPSG:4326';
+
+      response._data[index] = {
+        ...item,
+        // address: address,
+        geom: {
+          type: 'FeatureCollection',
+          features: [{ geometry: geom, type: 'Feature' }],
+        },
+      };
+    }
+
+    const responseById = response._data?.reduce(
+      (acc: any, item: any) => ({
+        ...acc,
+        [item.statinio_id]: item,
+      }),
+      {},
+    );
+
+    return items.map((i) => ({ ...i, address: responseById[i.statinio_id] }));
+  }
+
+  @Method
+  async getDokTypesData(ctx: Context) {
     const dokTypesByAppKey = {
       [APP_KEYS.infostatybaNaujas]: ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
       [APP_KEYS.infostatybaRemontas]: [
