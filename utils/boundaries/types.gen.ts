@@ -62,7 +62,7 @@ export type AddressesFilter = {
   postal_code?: StringFilter | null;
 };
 
-export type AddressesSearchRequest = {
+export type AddressesSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -89,6 +89,13 @@ export type AddressesSearchRequest = {
   addresses?: AddressesFilter | null;
 };
 
+export type AddressesSearchRequest = {
+  /**
+   * A list of filters to apply for searching addresses, combined using OR logic.
+   */
+  filters?: Array<AddressesSearchFilterRequest>;
+};
+
 export type CountiesFilter = {
   /**
    * Filter by codes
@@ -104,7 +111,7 @@ export type CountiesFilter = {
   name?: StringFilter | null;
 };
 
-export type CountiesSearchRequest = {
+export type CountiesSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -113,6 +120,13 @@ export type CountiesSearchRequest = {
    * Filter by counties
    */
   counties?: CountiesFilter | null;
+};
+
+export type CountiesSearchRequest = {
+  /**
+   * A list of filters to apply for searching counties, combined using OR logic.
+   */
+  filters?: Array<CountiesSearchFilterRequest>;
 };
 
 export type County = {
@@ -406,7 +420,7 @@ export type EldershipsFilter = {
   name?: StringFilter | null;
 };
 
-export type EldershipsSearchRequest = {
+export type EldershipsSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -423,6 +437,13 @@ export type EldershipsSearchRequest = {
    * Filter by elderships
    */
   elderships?: EldershipsFilter | null;
+};
+
+export type EldershipsSearchRequest = {
+  /**
+   * A list of filters to apply for searching elderships, combined using OR logic.
+   */
+  filters?: Array<EldershipsSearchFilterRequest>;
 };
 
 export type FlatResidentialArea = {
@@ -531,7 +552,7 @@ export type MunicipalitiesFilter = {
   name?: StringFilter | null;
 };
 
-export type MunicipalitiesSearchRequest = {
+export type MunicipalitiesSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -544,6 +565,13 @@ export type MunicipalitiesSearchRequest = {
    * Filter by municipalities
    */
   municipalities?: MunicipalitiesFilter | null;
+};
+
+export type MunicipalitiesSearchRequest = {
+  /**
+   * A list of filters to apply for searching municipalities, combined using OR logic.
+   */
+  filters?: Array<MunicipalitiesSearchFilterRequest>;
 };
 
 export type Municipality = {
@@ -677,7 +705,7 @@ export type ResidentialAreasFilter = {
   name?: StringFilter | null;
 };
 
-export type ResidentialAreasSearchRequest = {
+export type ResidentialAreasSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -694,6 +722,13 @@ export type ResidentialAreasSearchRequest = {
    * Filter by residential areas
    */
   residential_areas?: ResidentialAreasFilter | null;
+};
+
+export type ResidentialAreasSearchRequest = {
+  /**
+   * A list of filters to apply for searching residential areas, combined using OR logic.
+   */
+  filters?: Array<ResidentialAreasSearchFilterRequest>;
 };
 
 export type Rooms = {
@@ -730,7 +765,7 @@ export type RoomsFilter = {
   room_number?: StringFilter | null;
 };
 
-export type RoomsSearchRequest = {
+export type RoomsSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -755,6 +790,13 @@ export type RoomsSearchRequest = {
    * Filter by rooms
    */
   rooms?: RoomsFilter | null;
+};
+
+export type RoomsSearchRequest = {
+  /**
+   * A list of filters to apply for searching rooms, combined using OR logic.
+   */
+  filters?: Array<RoomsSearchFilterRequest>;
 };
 
 export type SearchSortBy = 'code' | 'name' | 'feature_id' | 'created_at';
@@ -934,7 +976,7 @@ export type StreetsFilter = {
   full_name?: StringFilter | null;
 };
 
-export type StreetsSearchRequest = {
+export type StreetsSearchFilterRequest = {
   /**
    * Filter by geometry
    */
@@ -955,6 +997,13 @@ export type StreetsSearchRequest = {
    * Filter by streets
    */
   streets?: StreetsFilter | null;
+};
+
+export type StreetsSearchRequest = {
+  /**
+   * A list of filters to apply for searching streets, combined using OR logic.
+   */
+  filters?: Array<StreetsSearchFilterRequest>;
 };
 
 export type StringFilter = {
