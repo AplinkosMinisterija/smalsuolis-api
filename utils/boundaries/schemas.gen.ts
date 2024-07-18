@@ -161,7 +161,7 @@ export const $AddressesFilter = {
   title: 'AddressesFilter',
 } as const;
 
-export const $AddressesSearchRequest = {
+export const $AddressesSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -231,6 +231,22 @@ export const $AddressesSearchRequest = {
     },
   },
   type: 'object',
+  title: 'AddressesSearchFilterRequest',
+} as const;
+
+export const $AddressesSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/AddressesSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching addresses, combined using OR logic.',
+      default: [],
+    },
+  },
+  type: 'object',
   title: 'AddressesSearchRequest',
 } as const;
 
@@ -284,7 +300,7 @@ export const $CountiesFilter = {
   title: 'CountiesFilter',
 } as const;
 
-export const $CountiesSearchRequest = {
+export const $CountiesSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -307,6 +323,22 @@ export const $CountiesSearchRequest = {
         },
       ],
       description: 'Filter by counties',
+    },
+  },
+  type: 'object',
+  title: 'CountiesSearchFilterRequest',
+} as const;
+
+export const $CountiesSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/CountiesSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching counties, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',
@@ -1056,7 +1088,7 @@ export const $EldershipsFilter = {
   title: 'EldershipsFilter',
 } as const;
 
-export const $EldershipsSearchRequest = {
+export const $EldershipsSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -1101,6 +1133,22 @@ export const $EldershipsSearchRequest = {
         },
       ],
       description: 'Filter by elderships',
+    },
+  },
+  type: 'object',
+  title: 'EldershipsSearchFilterRequest',
+} as const;
+
+export const $EldershipsSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/EldershipsSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching elderships, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',
@@ -1346,7 +1394,7 @@ export const $MunicipalitiesFilter = {
   title: 'MunicipalitiesFilter',
 } as const;
 
-export const $MunicipalitiesSearchRequest = {
+export const $MunicipalitiesSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -1380,6 +1428,23 @@ export const $MunicipalitiesSearchRequest = {
         },
       ],
       description: 'Filter by municipalities',
+    },
+  },
+  type: 'object',
+  title: 'MunicipalitiesSearchFilterRequest',
+} as const;
+
+export const $MunicipalitiesSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/MunicipalitiesSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description:
+        'A list of filters to apply for searching municipalities, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',
@@ -1620,7 +1685,7 @@ export const $ResidentialAreasFilter = {
   title: 'ResidentialAreasFilter',
 } as const;
 
-export const $ResidentialAreasSearchRequest = {
+export const $ResidentialAreasSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -1665,6 +1730,23 @@ export const $ResidentialAreasSearchRequest = {
         },
       ],
       description: 'Filter by residential areas',
+    },
+  },
+  type: 'object',
+  title: 'ResidentialAreasSearchFilterRequest',
+} as const;
+
+export const $ResidentialAreasSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/ResidentialAreasSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description:
+        'A list of filters to apply for searching residential areas, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',
@@ -1745,7 +1827,7 @@ export const $RoomsFilter = {
   title: 'RoomsFilter',
 } as const;
 
-export const $RoomsSearchRequest = {
+export const $RoomsSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -1812,6 +1894,22 @@ export const $RoomsSearchRequest = {
         },
       ],
       description: 'Filter by rooms',
+    },
+  },
+  type: 'object',
+  title: 'RoomsSearchFilterRequest',
+} as const;
+
+export const $RoomsSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/RoomsSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching rooms, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',
@@ -2175,7 +2273,7 @@ export const $StreetsFilter = {
   title: 'StreetsFilter',
 } as const;
 
-export const $StreetsSearchRequest = {
+export const $StreetsSearchFilterRequest = {
   properties: {
     geometry: {
       anyOf: [
@@ -2231,6 +2329,22 @@ export const $StreetsSearchRequest = {
         },
       ],
       description: 'Filter by streets',
+    },
+  },
+  type: 'object',
+  title: 'StreetsSearchFilterRequest',
+} as const;
+
+export const $StreetsSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/StreetsSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching streets, combined using OR logic.',
+      default: [],
     },
   },
   type: 'object',

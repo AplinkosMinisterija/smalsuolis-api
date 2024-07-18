@@ -4,12 +4,14 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
 import { APP_KEYS, App } from './apps.service';
+import { AddressesSearchFilterRequest } from '../utils/boundaries';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import { IntegrationsMixin } from '../mixins/integrations.mixin';
 import { wktToGeoJSON } from 'betterknown';
 import { addressesSearch } from '../utils/boundaries';
+import _ from 'lodash';
 
 @Service({
   name: 'integrations.infostatyba',
@@ -196,59 +198,83 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     const url =
       this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json?' + query;
 
-    const response: any = await ctx.call(
+    const infoStatybaResponse: any = await ctx.call(
       'http.get',
       { url, opt: { responseType: 'json' } },
       { timeout: 0 },
     );
 
-    for (const index in response._data) {
-      const item = response._data[index];
-      if (!item?.gat_kodas || !item?.pastatas) continue;
+    type StreetCodeWithPlotOrBuildingNumber = {
+      streetCode: number;
+      plotOrBuildingNumber: string;
+    };
+
+    const filterItems: Array<any> = infoStatybaResponse._data.filter(
+      (response: any) => response?.gat_kodas && response?.pastatas,
+    );
+    const infoStatybaResponseLookup = new Map<string, any>(
+      filterItems.map((response: any) => [
+        JSON.stringify(<StreetCodeWithPlotOrBuildingNumber>{
+          streetCode: parseInt(response.gat_kodas),
+          plotOrBuildingNumber: response.pastatas,
+        }),
+        response,
+      ]),
+    );
+
+    const chunkecFilterItems = _.chunk(filterItems, 100);
+
+    const geomLookupByStatinioId = new Map<string, any>();
+    for (const index in chunkecFilterItems) {
+      const addressesSearchFilters = chunkecFilterItems[index].map(
+        (item) =>
+          <AddressesSearchFilterRequest>{
+            streets: {
+              codes: [item.gat_kodas],
+            },
+            addresses: {
+              plot_or_building_number: {
+                exact: item.pastatas,
+              },
+            },
+          },
+      );
 
       const data = await addressesSearch({
         requestBody: {
-          streets: {
-            codes: [item.gat_kodas],
-          },
-          addresses: {
-            plot_or_building_number: {
-              exact: item.pastatas,
-            },
-          },
+          filters: addressesSearchFilters,
         },
+        size: 100,
         srid: 4326,
       });
 
-      const address = data?.items?.[0];
+      data.items.forEach((address) => {
+        const geom: any = wktToGeoJSON(address.geometry.data);
+        geom.crs = 'EPSG:4326';
 
-      if (!address) continue;
+        const resp = infoStatybaResponseLookup.get(
+          JSON.stringify(<StreetCodeWithPlotOrBuildingNumber>{
+            streetCode: address.street.code,
+            plotOrBuildingNumber: address.plot_or_building_number,
+          }),
+        );
 
-      const geom: any = wktToGeoJSON(address.geometry.data);
-
-      if (!geom) continue;
-
-      geom.crs = 'EPSG:4326';
-
-      response._data[index] = {
-        ...item,
-        // address: address,
-        geom: {
-          type: 'FeatureCollection',
-          features: [{ geometry: geom, type: 'Feature' }],
-        },
-      };
+        geomLookupByStatinioId.set(resp.statinio_id, {
+          ...address,
+          geom: {
+            type: 'FeatureCollection',
+            features: [{ geometry: geom, type: 'Feature' }],
+          },
+        });
+      });
     }
 
-    const responseById = response._data?.reduce(
-      (acc: any, item: any) => ({
-        ...acc,
-        [item.statinio_id]: item,
-      }),
-      {},
-    );
-
-    return items.map((i) => ({ ...i, address: responseById[i.statinio_id] }));
+    return items.map((item) => {
+      return {
+        ...item,
+        address: geomLookupByStatinioId.get(item.statinio_id),
+      };
+    });
   }
 
   @Method
