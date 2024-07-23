@@ -4,17 +4,11 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
 import { parse } from 'geojsonjs';
-import { APP_TYPES, App } from './apps.service';
+import { APP_KEYS, App } from './apps.service';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
-
-export enum DATAGOV_APPS {
-  infostatybaNaujas = `${APP_TYPES.infostatyba}-naujas`,
-  infostatybaRemontas = `${APP_TYPES.infostatyba}-remontas`,
-  infostatybaGriovimas = `${APP_TYPES.infostatyba}-griovimas`,
-  infostatybaPaskirtiesKeitimas = `${APP_TYPES.infostatyba}-paskirties-keitimas`,
-}
+import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
 @Service({
   name: 'datagov',
@@ -22,7 +16,7 @@ export enum DATAGOV_APPS {
     baseUrl: 'https://get.data.gov.lt',
   },
 
-  mixins: [Cron],
+  mixins: [Cron, IntegrationsMixin()],
 
   crons: [
     {
@@ -47,9 +41,14 @@ export default class DatagovService extends moleculer.Service {
         optional: true,
         default: 0,
       },
+      initial: {
+        type: 'boolean',
+        optional: true,
+        default: false,
+      },
     },
   })
-  async infostatyba(ctx: Context<{ limit: number }>) {
+  async infostatyba(ctx: Context<{ limit: number; initial: boolean }>) {
     const { limit } = ctx.params;
 
     const stats = {
@@ -66,7 +65,7 @@ export default class DatagovService extends moleculer.Service {
       },
     };
 
-    const { dokTypes, appIdByDokType } = await this.getInfostatybaDokTypesData(ctx);
+    const { dokTypes, appByDokType } = await this.getInfostatybaDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
 
     const query = [
@@ -132,18 +131,31 @@ export default class DatagovService extends moleculer.Service {
           { title: 'Statinio pavadinimas', value: entry.statinio_pavadinimas || '-' },
         ];
 
+        const currentApp = appByDokType[entry.dok_tipo_kodas];
+
+        const tagsIds: number[] = await this.findOrCreateTags(
+          ctx,
+          [entry.statybos_rusis],
+          currentApp.key,
+        );
+
         const event: Partial<Event> = {
           name: `${entry.statinio_pavadinimas}, ${entry.adresas}`,
           body: toEventBodyMarkdown(bodyJSON),
           startAt: new Date(entry.dokumento_reg_data),
           geom,
-          app: appIdByDokType[entry.dok_tipo_kodas],
+          app: currentApp.id,
           isFullDay: true,
           externalId: entry._id,
+          tags: tagsIds,
         };
 
         if (entry.uuid) {
           event.url = `https://infostatyba.planuojustatau.lt/eInfostatyba-external/projectObject/projectObjectMain?uuid=${entry.uuid}`;
+        }
+
+        if (ctx.params.initial) {
+          event.createdAt = event.startAt;
         }
 
         stats.valid.total++;
@@ -151,7 +163,7 @@ export default class DatagovService extends moleculer.Service {
         const existingEvent: Event = await ctx.call('events.findOne', {
           query: {
             externalId: event.externalId,
-            app: appIdByDokType[entry.dok_tipo_kodas],
+            app: currentApp.id,
           },
         });
 
@@ -179,16 +191,8 @@ export default class DatagovService extends moleculer.Service {
   @Method
   async getInfostatybaDokTypesData(ctx: Context) {
     const dokTypesByAppKey = {
-      [DATAGOV_APPS.infostatybaNaujas]: [
-        'LSNS',
-        'SLRTV',
-        'SLRIE',
-        'SLRKS',
-        'SSIYV',
-        'SBEOS',
-        'SNSPJ',
-      ],
-      [DATAGOV_APPS.infostatybaRemontas]: [
+      [APP_KEYS.infostatybaNaujas]: ['LSNS', 'SLRTV', 'SLRIE', 'SLRKS', 'SSIYV', 'SBEOS', 'SNSPJ'],
+      [APP_KEYS.infostatybaRemontas]: [
         'LSKR',
         'KRBES',
         'LSPR',
@@ -200,22 +204,21 @@ export default class DatagovService extends moleculer.Service {
         'RSIYV',
         'RBEOS',
       ],
-      [DATAGOV_APPS.infostatybaGriovimas]: ['LGS', 'GBEOS'],
-      [DATAGOV_APPS.infostatybaPaskirtiesKeitimas]: ['LPSP'],
+      [APP_KEYS.infostatybaGriovimas]: ['LGS', 'GBEOS'],
+      [APP_KEYS.infostatybaPaskirtiesKeitimas]: ['LPSP'],
     };
 
-    const appIdByKey: { [key: string]: App['id'] } = await ctx.call('apps.find', {
+    const appByKey: { [key: string]: App } = await ctx.call('apps.find', {
       query: {
         key: { $in: Object.keys(dokTypesByAppKey) },
       },
       mapping: 'key',
-      mappingField: 'id',
     });
 
-    const appIdByDokType = Object.entries(dokTypesByAppKey).reduce(
+    const appByDokType = Object.entries(dokTypesByAppKey).reduce(
       (acc: any, [appKey, dokTypes]: any[]) => {
         dokTypes?.forEach((dokType: string) => {
-          acc[dokType] = appIdByKey[appKey];
+          acc[dokType] = appByKey[appKey];
         });
         return acc;
       },
@@ -224,7 +227,7 @@ export default class DatagovService extends moleculer.Service {
 
     return {
       dokTypes: Object.values(dokTypesByAppKey).flat(),
-      appIdByDokType,
+      appByDokType,
     };
   }
 }

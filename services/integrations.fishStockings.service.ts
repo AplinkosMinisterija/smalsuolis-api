@@ -3,7 +3,7 @@
 import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
-import { APP_TYPES, App } from './apps.service';
+import { APP_KEYS, App } from './apps.service';
 import transformation from 'transform-coordinates';
 
 // @ts-ignore
@@ -77,9 +77,14 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
         optional: true,
         default: 0,
       },
+      initial: {
+        type: 'boolean',
+        optional: true,
+        default: false,
+      },
     },
   })
-  async getData(ctx: Context<{ limit: number }>) {
+  async getData(ctx: Context<{ limit: number; initial: boolean }>) {
     const stats = {
       total: 0,
       valid: {
@@ -94,7 +99,7 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
-        key: APP_TYPES.izuvinimas,
+        key: APP_KEYS.izuvinimas,
       },
     });
 
@@ -161,6 +166,10 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
           isFullDay: false,
           externalId: entry.id?.toString(),
         };
+
+        if (ctx.params.initial) {
+          event.createdAt = event.startAt;
+        }
 
         const existingEvent: Event = await ctx.call('events.findOne', {
           query: {

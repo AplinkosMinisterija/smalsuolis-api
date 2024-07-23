@@ -1,21 +1,22 @@
 'use strict';
 
 import moleculer, { Context } from 'moleculer';
-import { Action, Method, Service } from 'moleculer-decorators';
-import { APP_TYPES, App } from './apps.service';
+import { Action, Service } from 'moleculer-decorators';
+import { App, APP_KEYS } from './apps.service';
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import unzipper from 'unzipper';
 import stream from 'node:stream';
 
 import { Event, toEventBodyMarkdown } from './events.service';
+import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
 @Service({
   name: 'integrations.lumbering',
   settings: {
     zipUrl: 'https://lkmp.alisas.lt/static/lkmp-data.geojson.zip',
   },
-  mixins: [Cron],
+  mixins: [Cron, IntegrationsMixin()],
   crons: [
     {
       name: 'integrationsLumbering',
@@ -60,7 +61,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
-        key: APP_TYPES.miskoKirtimai,
+        key: APP_KEYS.miskoKirtimai,
       },
     });
 
@@ -130,6 +131,23 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
       ];
 
+      const tagsIds: number[] = await this.findOrCreateTags(
+        ctx,
+        [feature.properties.kirtimo_rusis],
+        APP_KEYS.miskoKirtimai,
+      );
+
+      const tagsData = [];
+
+      if (tagsIds.length && feature.properties.kertamas_plotas) {
+        const area = Math.round(Number(feature.properties.kertamas_plotas) * 100) / 100;
+        tagsData.push({
+          id: tagsIds[0],
+          name: 'area',
+          value: area,
+        });
+      }
+
       const event: Partial<Event> = {
         name: `${feature.properties.kirtimo_rusis}, ${feature.properties.girininkija} girininkija, ${feature.properties.padalinys} r.p.`,
         body: toEventBodyMarkdown(bodyJSON),
@@ -139,6 +157,8 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         app: app.id,
         isFullDay: true,
         externalId: feature.properties.id,
+        tags: tagsIds,
+        tagsData,
       };
 
       if (ctx.params.initial) {
