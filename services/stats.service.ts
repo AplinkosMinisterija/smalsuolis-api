@@ -5,6 +5,7 @@ import { Action, Service } from 'moleculer-decorators';
 import { Tag } from './tags.service';
 import { Event } from './events.service';
 import { App, APP_TYPE } from './apps.service';
+import { EndpointType } from '../types';
 
 @Service({
   name: 'stats',
@@ -12,6 +13,7 @@ import { App, APP_TYPE } from './apps.service';
 export default class StatsService extends moleculer.Service {
   @Action({
     rest: 'GET /',
+    auth: EndpointType.PUBLIC,
   })
   async all(ctx: Context<{ query?: any }>) {
     const tagsById: { [key: string]: Tag } = await ctx.call('tags.find', { mapping: 'id' });
