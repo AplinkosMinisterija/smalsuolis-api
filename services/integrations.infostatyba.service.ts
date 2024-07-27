@@ -8,7 +8,7 @@ import { AddressesSearchFilterRequest } from '../utils/boundaries';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
-import { IntegrationsMixin } from '../mixins/integrations.mixin';
+import { IntegrationsMixin, IntegrationStats } from '../mixins/integrations.mixin';
 import { wktToGeoJSON } from 'betterknown';
 import { addressesSearch } from '../utils/boundaries';
 import _ from 'lodash';
@@ -54,19 +54,18 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
     const { limit } = ctx.params;
 
-    const stats = {
-      total: 0,
-      valid: {
-        total: 0,
-        inserted: 0,
-        updated: 0,
-      },
+    type InfostatybaIntegrationStats = {
       invalid: {
-        total: 0,
-        no_date: 0,
-        no_geom: 0,
-      },
+        no_geom: number;
+        no_date: number;
+      };
     };
+
+    const stats: IntegrationStats & InfostatybaIntegrationStats = this.startIntegration();
+
+    // Additional props
+    stats.invalid.no_date = 0;
+    stats.invalid.no_geom = 0;
 
     const { dokTypes, appByDokType } = await this.getDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
@@ -103,10 +102,10 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
       for (let entry of response._data) {
         skipParamString = `&_id>'${entry._id}'`;
-        stats.total++;
 
         if (!entry.dokumento_reg_data) {
-          stats.invalid.total++;
+          this.addTotal();
+          this.addInvalid();
           stats.invalid.no_date++;
           continue;
         }
@@ -117,7 +116,8 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
         }
 
         if (!geom) {
-          stats.invalid.total++;
+          this.addTotal();
+          this.addInvalid();
           stats.invalid.no_geom++;
           continue;
         }
@@ -153,38 +153,15 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
           event.url = `https://infostatyba.planuojustatau.lt/eInfostatyba-external/projectObject/projectObjectMain?uuid=${entry.uuid}`;
         }
 
-        if (ctx.params.initial) {
-          event.createdAt = event.startAt;
-        }
-
-        stats.valid.total++;
-
-        const existingEvent: Event = await ctx.call('events.findOne', {
-          query: {
-            externalId: event.externalId,
-            app: currentApp.id,
-          },
-        });
-
-        if (existingEvent) {
-          stats.valid.updated++;
-          await ctx.call('events.update', {
-            id: existingEvent.id,
-            ...event,
-          });
-        } else {
-          stats.valid.inserted++;
-          await ctx.call('events.create', event);
-        }
+        await this.createOrUpdateEvent(ctx, currentApp, event, !!ctx.params.initial);
 
         if (limit && stats.valid.total >= limit) {
-          return stats;
+          return this.finishIntegration();
         }
       }
     } while (response?._data?.length);
 
-    this.broker.emit('integrations.sync.finished');
-    return stats;
+    return this.finishIntegration();
   }
 
   @Method
