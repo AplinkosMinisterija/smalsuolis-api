@@ -14,16 +14,26 @@ export default class StatsService extends moleculer.Service {
   @Action({
     rest: 'GET /',
     auth: EndpointType.PUBLIC,
+    timeout: 0,
+    cache: {
+      keys: ['query'],
+    },
   })
   async all(ctx: Context<{ query?: any }>) {
     const tagsById: { [key: string]: Tag } = await ctx.call('tags.find', { mapping: 'id' });
 
-    const events: Event<'app', 'id' | 'app' | 'tags' | 'tagsData'>[] = await ctx.call(
+    const appsById: { [key: string]: App } = await ctx.call('apps.find', {
+      mapping: 'id',
+    });
+
+    const events: Event<null, 'id' | 'app' | 'tags' | 'tagsData'>[] = await ctx.call(
       'events.find',
       {
         query: ctx.params.query,
-        populate: ['app'],
         fields: ['id', 'app', 'tags', 'tagsData'],
+      },
+      {
+        timeout: 0,
       },
     );
 
@@ -44,7 +54,8 @@ export default class StatsService extends moleculer.Service {
     stats.count = events.length;
 
     events?.forEach((e) => {
-      const appType = APP_TYPE[e.app.key];
+      const appKey = appsById[e.app]?.key;
+      const appType = APP_TYPE[appKey];
       const appStats = stats.byApp[appType] || { count: 0 };
       appStats.count++;
 
