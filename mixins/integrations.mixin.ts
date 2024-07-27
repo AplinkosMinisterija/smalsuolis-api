@@ -106,6 +106,9 @@ export function IntegrationsMixin() {
         this.stats.duration = formatDuration(
           intervalToDuration({ start: this.stats.startTime, end: this.stats.endTime }),
         );
+
+        this.broker.logger.info(`${this.name} sync finish`, this.stats);
+
         return this.stats;
       },
       async findOrCreateTags(ctx: Context, names: string[], appKey: string) {
