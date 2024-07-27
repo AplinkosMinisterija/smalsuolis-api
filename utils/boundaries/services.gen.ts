@@ -546,7 +546,7 @@ export const addressesGet = (data: AddressesGetData): CancelablePromise<Addresse
  * @param data.geometryOutputFormat
  * @param data.cursor Cursor for the next page
  * @param data.size Page size
- * @returns CursorPage_Rooms_ A paginated list of rooms matching the search criteria.
+ * @returns CursorPage_Room_ A paginated list of rooms matching the search criteria.
  * @throws ApiError
  */
 export const roomsSearch = (data: RoomsSearchData): CancelablePromise<RoomsSearchResponse> => {
@@ -576,7 +576,7 @@ export const roomsSearch = (data: RoomsSearchData): CancelablePromise<RoomsSearc
  * @param data.code The code of the room to retrieve
  * @param data.srid A spatial reference identifier (SRID) for geometry output.
  * @param data.geometryOutputFormat Specify the format for geometry output.
- * @returns Rooms Details of the room with the specified code.
+ * @returns Room Details of the room with the specified code.
  * @throws ApiError
  */
 export const roomsGet = (data: RoomsGetData): CancelablePromise<RoomsGetResponse> => {

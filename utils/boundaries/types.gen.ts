@@ -39,6 +39,14 @@ export type Address = {
   geometry: Geometry;
 };
 
+export type AddressSearchSortBy =
+  | 'code'
+  | 'plot_or_building_number'
+  | 'building_block_number'
+  | 'postal_code'
+  | 'feature_id'
+  | 'created_at';
+
 export type AddressesFilter = {
   /**
    * Filter by codes
@@ -299,8 +307,8 @@ export type CursorPage_ResidentialArea_ = {
   next_page?: string | null;
 };
 
-export type CursorPage_Rooms_ = {
-  items: Array<Rooms>;
+export type CursorPage_Room_ = {
+  items: Array<Room>;
   /**
    * Total items
    */
@@ -731,7 +739,7 @@ export type ResidentialAreasSearchRequest = {
   filters?: Array<ResidentialAreasSearchFilterRequest>;
 };
 
-export type Rooms = {
+export type Room = {
   /**
    * Unique code of the room
    */
@@ -787,6 +795,10 @@ export type RoomsSearchFilterRequest = {
    */
   streets?: StreetsFilter | null;
   /**
+   * Filter by addresses
+   */
+  addresses?: AddressesFilter | null;
+  /**
    * Filter by rooms
    */
   rooms?: RoomsFilter | null;
@@ -798,6 +810,8 @@ export type RoomsSearchRequest = {
    */
   filters?: Array<RoomsSearchFilterRequest>;
 };
+
+export type RoomsSearchSortBy = 'code' | 'room_number' | 'created_at';
 
 export type SearchSortBy = 'code' | 'name' | 'feature_id' | 'created_at';
 
@@ -1251,7 +1265,7 @@ export type AddressesSearchData = {
    * Page size
    */
   size?: number;
-  sortBy?: SearchSortBy;
+  sortBy?: AddressSearchSortBy;
   sortOrder?: SearchSortOrder;
   /**
    * A spatial reference identifier (SRID) for geometry output.
@@ -1289,7 +1303,7 @@ export type RoomsSearchData = {
    * Page size
    */
   size?: number;
-  sortBy?: SearchSortBy;
+  sortBy?: RoomsSearchSortBy;
   sortOrder?: SearchSortOrder;
   /**
    * A spatial reference identifier (SRID) for geometry output.
@@ -1297,7 +1311,7 @@ export type RoomsSearchData = {
   srid?: number;
 };
 
-export type RoomsSearchResponse = CursorPage_Rooms_;
+export type RoomsSearchResponse = CursorPage_Room_;
 
 export type RoomsGetData = {
   /**
@@ -1314,7 +1328,7 @@ export type RoomsGetData = {
   srid?: number;
 };
 
-export type RoomsGetResponse = Rooms;
+export type RoomsGetResponse = Room;
 
 export type GetHealthHealthGetResponse = HealthCheck;
 
@@ -1625,7 +1639,7 @@ export type $OpenApiTs = {
         /**
          * A paginated list of rooms matching the search criteria.
          */
-        200: CursorPage_Rooms_;
+        200: CursorPage_Room_;
         /**
          * Validation Error
          */
@@ -1640,7 +1654,7 @@ export type $OpenApiTs = {
         /**
          * Details of the room with the specified code.
          */
-        200: Rooms;
+        200: Room;
         /**
          * Room not found
          */

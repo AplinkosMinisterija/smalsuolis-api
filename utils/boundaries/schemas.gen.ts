@@ -89,6 +89,19 @@ export const $Address = {
   title: 'Address',
 } as const;
 
+export const $AddressSearchSortBy = {
+  type: 'string',
+  enum: [
+    'code',
+    'plot_or_building_number',
+    'building_block_number',
+    'postal_code',
+    'feature_id',
+    'created_at',
+  ],
+  title: 'AddressSearchSortBy',
+} as const;
+
 export const $AddressesFilter = {
   properties: {
     codes: {
@@ -796,11 +809,11 @@ export const $CursorPage_ResidentialArea_ = {
   title: 'CursorPage[ResidentialArea]',
 } as const;
 
-export const $CursorPage_Rooms_ = {
+export const $CursorPage_Room_ = {
   properties: {
     items: {
       items: {
-        $ref: '#/components/schemas/Rooms',
+        $ref: '#/components/schemas/Room',
       },
       type: 'array',
       title: 'Items',
@@ -868,7 +881,7 @@ export const $CursorPage_Rooms_ = {
   },
   type: 'object',
   required: ['items'],
-  title: 'CursorPage[Rooms]',
+  title: 'CursorPage[Room]',
 } as const;
 
 export const $CursorPage_Street_ = {
@@ -1753,7 +1766,7 @@ export const $ResidentialAreasSearchRequest = {
   title: 'ResidentialAreasSearchRequest',
 } as const;
 
-export const $Rooms = {
+export const $Room = {
   properties: {
     code: {
       type: 'integer',
@@ -1790,7 +1803,7 @@ export const $Rooms = {
   },
   type: 'object',
   required: ['code', 'room_number', 'created_at', 'geometry', 'address'],
-  title: 'Rooms',
+  title: 'Room',
 } as const;
 
 export const $RoomsFilter = {
@@ -1884,6 +1897,17 @@ export const $RoomsSearchFilterRequest = {
       ],
       description: 'Filter by streets',
     },
+    addresses: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/AddressesFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by addresses',
+    },
     rooms: {
       anyOf: [
         {
@@ -1914,6 +1938,12 @@ export const $RoomsSearchRequest = {
   },
   type: 'object',
   title: 'RoomsSearchRequest',
+} as const;
+
+export const $RoomsSearchSortBy = {
+  type: 'string',
+  enum: ['code', 'room_number', 'created_at'],
+  title: 'RoomsSearchSortBy',
 } as const;
 
 export const $SearchSortBy = {
