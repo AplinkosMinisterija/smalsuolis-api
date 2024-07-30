@@ -12,7 +12,9 @@ import { IntegrationsMixin, IntegrationStats } from '../mixins/integrations.mixi
 import { wktToGeoJSON } from 'betterknown';
 import { addressesSearch } from '../utils/boundaries';
 import _ from 'lodash';
+import { formatDuration, intervalToDuration } from 'date-fns';
 
+const addressCacheKey = 'integrations:infostatyba:addresses';
 @Service({
   name: 'integrations.infostatyba',
   settings: {
@@ -83,6 +85,18 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     const url =
       this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + query;
+
+    /* 
+      Since Statinys doesn't have relationship to addresses dataset we can go two ways:
+      1. Fetch addresses for each batch (Statinys -> Filter addresses by statinys_id)
+      2. Prefetch all addresses and then get from local cache (redis in this case)
+
+      With the first approach each query (of 1K items with filters) takes ~10-30 seconds. 
+      Without filtering each 10K elements takes ~4s (~15 mins total).
+
+      So going with second approach we save a lot of time and effort.
+    */
+    await this.prefetchAndCacheAddresses(ctx);
 
     let skipParamString = '';
     let response: any;
@@ -166,27 +180,19 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
   @Method
   async resolveAddresses(ctx: Context, items: any[]) {
-    const statinioIdQuery = items
-      .map((i) => i.statinio_id)
-      .map((i) => `statinio_id="${i}"`)
-      .join('|');
-    const query = [`(${statinioIdQuery})`].map((i) => encodeURIComponent(i)).join('&');
+    const addresses: any[] = [];
 
-    const url =
-      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json?' + query;
-
-    const infoStatybaResponse: any = await ctx.call(
-      'http.get',
-      { url, opt: { responseType: 'json' } },
-      { timeout: 0 },
-    );
+    for (let entry of items) {
+      const data = await this.broker.cacher.get(`${addressCacheKey}:${entry.statinio_id}`);
+      addresses.push(data);
+    }
 
     type StreetCodeWithPlotOrBuildingNumber = {
       streetCode: number;
       plotOrBuildingNumber: string;
     };
 
-    const filterItems: Array<any> = infoStatybaResponse._data.filter(
+    const filterItems: Array<any> = addresses.filter(
       (response: any) => response?.gat_kodas && response?.pastatas,
     );
     const infoStatybaResponseLookup = new Map<string, any>(
@@ -252,6 +258,81 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
         address: geomLookupByStatinioId.get(item.statinio_id),
       };
     });
+  }
+
+  @Method
+  async prefetchAndCacheAddresses(ctx: Context) {
+    const query = [`limit(10000)`, 'sort(_id)', 'select(_id,statinio_id,gat_kodas,pastatas)']
+      .map((i) => encodeURIComponent(i))
+      .join('&');
+
+    const urlWithoutQuery =
+      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json?';
+    const url = urlWithoutQuery + query;
+
+    const totalResponse: any = await ctx.call(
+      'http.get',
+      { url: `${urlWithoutQuery}count()`, opt: { responseType: 'json' } },
+      { timeout: 0 },
+    );
+
+    const total = totalResponse?._data?.[0]?.['count()'];
+
+    let skipParamString = '';
+
+    let response: any;
+    let count = 0;
+    const startTime = new Date();
+
+    do {
+      response = await ctx.call(
+        'http.get',
+        {
+          url: `${url}${skipParamString}`,
+          opt: { responseType: 'json' },
+        },
+        {
+          timeout: 0,
+        },
+      );
+
+      const items = response._data || [];
+
+      count += items.length;
+      let promises = [];
+
+      for (let entry of response._data) {
+        skipParamString = `&_id>'${entry._id}'`;
+        promises.push(this.broker.cacher.set(`${addressCacheKey}:${entry.statinio_id}`, entry));
+      }
+
+      await Promise.all(promises);
+
+      const progress = this.calcProgression(count, total, startTime);
+      this.broker.logger.info(`Address sync progress: ${progress.text}`);
+    } while (response._data.length);
+  }
+
+  @Method
+  calcProgression(count: number, total: number, startTime: Date) {
+    const currentTime = new Date();
+    const percentage = Math.round((count / total) * 10000) / 100;
+
+    const estimatedEndTime = new Date(
+      (currentTime.getTime() - startTime.getTime()) / (percentage / 100) + startTime.getTime(),
+    );
+    const duration = formatDuration(intervalToDuration({ start: startTime, end: currentTime }));
+    const estimatedDuration = formatDuration(
+      intervalToDuration({ start: startTime, end: estimatedEndTime }),
+    );
+    return {
+      count,
+      total,
+      percentage,
+      duration,
+      estimatedDuration,
+      text: `${count} of ${total} (${percentage}%) - ${duration} (est. ${estimatedDuration})`,
+    };
   }
 
   @Method
