@@ -276,13 +276,16 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
       { timeout: 0 },
     );
 
-    const total = totalResponse?._data?.[0]?.['count()'];
-
     let skipParamString = '';
 
     let response: any;
-    let count = 0;
     const startTime = new Date();
+    const oneDay = 60 * 60 * 24;
+
+    const stats = {
+      count: 0,
+      total: totalResponse?._data?.[0]?.['count()'],
+    };
 
     do {
       response = await ctx.call(
@@ -298,17 +301,20 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
       const items = response._data || [];
 
-      count += items.length;
+      stats.count += items.length;
       let promises = [];
 
       for (let entry of response._data) {
         skipParamString = `&_id>'${entry._id}'`;
-        promises.push(this.broker.cacher.set(`${addressCacheKey}:${entry.statinio_id}`, entry));
+
+        promises.push(
+          this.broker.cacher.set(`${addressCacheKey}:${entry.statinio_id}`, entry, oneDay),
+        );
       }
 
       await Promise.all(promises);
 
-      const progress = this.calcProgression(count, total, startTime);
+      const progress = this.calcProgression(stats.count, stats.total, startTime);
       this.broker.logger.info(`Address sync progress: ${progress.text}`);
     } while (response._data.length);
   }
