@@ -200,12 +200,9 @@ export default class EventsService extends moleculer.Service {
     const eventsQuery = adapter.computeQuery(table, query);
     const tagsById: { [key: string]: Tag } = await ctx.call('tags.find', { mapping: 'id' });
 
-    const appTypeCaseWhenClause = Object.keys(APP_TYPE).reduce((acc: string[], key: string) => {
-      if (key && APP_TYPE[key]) {
-        acc.push(`WHEN apps.key = '${key}' THEN '${APP_TYPE[key]}'`);
-      }
-      return acc;
-    }, []);
+    const appTypeCaseWhenClause = Object.keys(APP_TYPE).map(
+      (key: string) => `WHEN apps.key = '${key}' THEN '${APP_TYPE[key]}'`,
+    );
 
     const appTypeCaseClause = `CASE ${appTypeCaseWhenClause.join(' ')} END AS app_type`;
 
