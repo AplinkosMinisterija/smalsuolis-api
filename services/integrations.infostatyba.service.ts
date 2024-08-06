@@ -58,6 +58,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     type InfostatybaIntegrationStats = {
       invalid: {
+        no_address: number;
         no_geom: number;
         no_date: number;
       };
@@ -68,6 +69,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     // Additional props
     stats.invalid.no_date = 0;
     stats.invalid.no_geom = 0;
+    stats.invalid.no_address = 0;
 
     const { dokTypes, appByDokType } = await this.getDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
@@ -125,6 +127,13 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
         }
 
         let geom;
+        if (!entry.address_data?.pastatas) {
+          this.addTotal();
+          this.addInvalid();
+          stats.invalid.no_address++;
+          continue;
+        }
+
         if (entry.address?.geom) {
           geom = entry.address.geom;
         }
@@ -184,6 +193,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     for (let entry of items) {
       const data = await this.broker.cacher.get(`${addressCacheKey}:${entry.statinio_id}`);
+      entry.address_data = data;
       addresses.push(data);
     }
 
