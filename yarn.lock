@@ -12,6 +12,23 @@
   resolved "https://registry.yarnpkg.com/@aplinkosministerija/eslint-config-biip-api/-/eslint-config-biip-api-1.0.0.tgz#73b5bbe0293613caf9672c0a5d6f3007bed90b2f"
   integrity sha512-pjZUTahsui7NhcDaT/n3n/6R6MGpRJUkFX14rIBLyRpNXqHHWC3ZtKU0IHorrPuceINmZE7mWvemwGAedTu+SA==
 
+"@aplinkosministerija/moleculer-accounts@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@aplinkosministerija/moleculer-accounts/-/moleculer-accounts-1.3.0.tgz#e91bbecfe44d030c52feacb8962de722555198ce"
+  integrity sha512-NicVkikKzw/ZQqZq4JaNzsnHPa1Fwch9CdtnYrxQjT5SvOhQMtHaJ8ZAZczQu37OvzrmAFBzU7jcV57r+5phFw==
+  dependencies:
+    "@moleculer/database" "github:ambrazasp/moleculerjs-database"
+    jsonwebtoken "^9.0.2"
+    knex "^3.1.0"
+    lodash "^4.17.21"
+    moleculer "^0.14.33"
+    moleculer-decorators "^1.3.0"
+    moleculer-postgis "^0.3.3"
+    pg "^8.12.0"
+    supercluster "7.1.5"
+    typescript "^5.4.5"
+    vt-pbf "^3.1.3"
+
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz#00629c35a688e05a88b1cda684fb9d5e73f000a1"
@@ -287,11 +304,6 @@
     "@types/node" "*"
     "@types/responselike" "^1.0.0"
 
-"@types/geojson@*":
-  version "7946.0.14"
-  resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.14.tgz#319b63ad6df705ee2a65a73ef042c8271e696613"
-  integrity sha512-WCfD5Ht3ZesJUsONdhvm84dmzWOiOzOAqOncN0++w0lBw1o8OuDNJF2McvvCef/yBqb/HYRahp1BYtODFQ8bRg==
-
 "@types/http-cache-semantics@*":
   version "4.0.4"
   resolved "https://registry.yarnpkg.com/@types/http-cache-semantics/-/http-cache-semantics-4.0.4.tgz#b979ebad3919799c979b17c72621c0bc0a31c6c4"
@@ -364,13 +376,6 @@
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/@types/showdown/-/showdown-2.0.6.tgz#3d7affd5f971b4a17783ec2b23b4ad3b97477b7e"
   integrity sha512-pTvD/0CIeqe4x23+YJWlX2gArHa8G0J0Oh6GKaVXV7TAeickpkkZiNOgFcFcmLQ5lB/K0qBJL1FtRYltBfbGCQ==
-
-"@types/supercluster@^7.1.3":
-  version "7.1.3"
-  resolved "https://registry.yarnpkg.com/@types/supercluster/-/supercluster-7.1.3.tgz#1a1bc2401b09174d9c9e44124931ec7874a72b27"
-  integrity sha512-Z0pOY34GDFl3Q6hUFYf3HkTwKEE02e7QgtJppBt+beEAxnyOpJua+voGFvxINBHa06GwLFFym7gRPY2SiKIfIA==
-  dependencies:
-    "@types/geojson" "*"
 
 "@types/transform-coordinates@^1.0.2":
   version "1.0.2"
@@ -1018,6 +1023,11 @@ commander@11.1.0:
   version "11.1.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-11.1.0.tgz#62fdce76006a68e5c1ab3314dc92e800eb83d906"
   integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
+
+commander@^10.0.0:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-10.0.1.tgz#881ee46b4f77d1c1dccc5823433aa39b022cbe06"
+  integrity sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==
 
 commander@^9.0.0, commander@^9.1.0, commander@^9.4.1:
   version "9.5.0"
@@ -1745,6 +1755,11 @@ fastest-validator@^1.12.0, fastest-validator@^1.16.0, fastest-validator@^1.17.0:
   resolved "https://registry.yarnpkg.com/fastest-validator/-/fastest-validator-1.18.0.tgz#77a51fa09de13727f3216827a2cbd9f90e09a84c"
   integrity sha512-3v6UJF1U/b56GqzDZqEtgPi2g261eGI9zQWDUrmOVKHiAktFIsHklp4XViX+a4yF7S5JjPm4KKmkgCsaara03g==
 
+fastest-validator@^1.19.0:
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/fastest-validator/-/fastest-validator-1.19.0.tgz#96f792ce774a81a76efba32974e669c47a2b15eb"
+  integrity sha512-wUfJBrXmccVz4kARAiWTkuqsC6EFeqbNxwfysCDk+maExBPP8KxyBwaWtayrWjKIaBIbaz+rqI2kel6ecayxcg==
+
 fastq@^1.6.0:
   version "1.17.1"
   resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.17.1.tgz#2a523f07a4e7b1e81a42b91b8bf2254107753b47"
@@ -2250,7 +2265,7 @@ ip-address@^9.0.5:
     jsbn "1.1.0"
     sprintf-js "^1.1.3"
 
-ipaddr.js@^2.1.0:
+ipaddr.js@^2.1.0, ipaddr.js@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-2.2.0.tgz#d33fa7bac284f4de7af949638c9d68157c6b92e8"
   integrity sha512-Ag3wB2o37wslZS19hZqorUnrnzSkpOVy+IiiDEiTqNubEYpYuHWIf6K4psgN2ZWKExS4xhVCrRVfb/wfW8fWJA==
@@ -2505,7 +2520,7 @@ json5@^1.0.2:
   dependencies:
     minimist "^1.2.0"
 
-jsonwebtoken@^9.0.0:
+jsonwebtoken@^9.0.0, jsonwebtoken@^9.0.2:
   version "9.0.2"
   resolved "https://registry.yarnpkg.com/jsonwebtoken/-/jsonwebtoken-9.0.2.tgz#65ff91f4abef1784697d40952bb1998c504caaf3"
   integrity sha512-PRp66vJ865SSqOlgqS8hujT5U4AOgMfhrwYIuIhfKaoSCZcirrmASQr8CX7cUg+RMih+hgznrjp99o+W4pJLHQ==
@@ -2570,6 +2585,26 @@ knex@2.4.0:
     interpret "^2.2.0"
     lodash "^4.17.21"
     pg-connection-string "2.5.0"
+    rechoir "^0.8.0"
+    resolve-from "^5.0.0"
+    tarn "^3.0.2"
+    tildify "2.0.0"
+
+knex@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/knex/-/knex-3.1.0.tgz#b6ddd5b5ad26a6315234a5b09ec38dc4a370bd8c"
+  integrity sha512-GLoII6hR0c4ti243gMs5/1Rb3B+AjwMOfjYm97pu0FOQa7JH56hgBxYf5WK2525ceSbBY1cjeZ9yk99GPMB6Kw==
+  dependencies:
+    colorette "2.0.19"
+    commander "^10.0.0"
+    debug "4.3.4"
+    escalade "^3.1.1"
+    esm "^3.2.25"
+    get-package-type "^0.1.0"
+    getopts "2.3.0"
+    interpret "^2.2.0"
+    lodash "^4.17.21"
+    pg-connection-string "2.6.2"
     rechoir "^0.8.0"
     resolve-from "^5.0.0"
     tarn "^3.0.2"
@@ -3051,6 +3086,22 @@ moleculer@^0.14.0, moleculer@^0.14.20, moleculer@^0.14.31:
     node-fetch "^2.6.7"
     recursive-watch "^1.1.4"
 
+moleculer@^0.14.33:
+  version "0.14.34"
+  resolved "https://registry.yarnpkg.com/moleculer/-/moleculer-0.14.34.tgz#bbed4d133110b8a2610be0a8c348fb2db353348b"
+  integrity sha512-xILOSPqo4ATKhhAhvQXRBgMVbaKHPKBvgYasihVCmPGYK7QCeLnoOV+MD+a4/VmyEjLaAOzlIQBSYIUu0mwg9Q==
+  dependencies:
+    args "^5.0.3"
+    eventemitter2 "^6.4.9"
+    fastest-validator "^1.19.0"
+    glob "^7.2.0"
+    ipaddr.js "^2.2.0"
+    kleur "^4.1.5"
+    lodash "^4.17.21"
+    lru-cache "^6.0.0"
+    node-fetch "^2.6.7"
+    recursive-watch "^1.1.4"
+
 mri@1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/mri/-/mri-1.1.4.tgz#7cb1dd1b9b40905f1fac053abe25b6720f44744a"
@@ -3387,6 +3438,11 @@ pg-connection-string@2.5.0:
   resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.5.0.tgz#538cadd0f7e603fc09a12590f3b8a452c2c0cf34"
   integrity sha512-r5o/V/ORTA6TmUnyWZR9nCj1klXCO2CEKNRlVuJptZe85QuhFayC7WeMic7ndayT5IRIR0S0xFxFi2ousartlQ==
 
+pg-connection-string@2.6.2:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.6.2.tgz#713d82053de4e2bd166fab70cd4f26ad36aab475"
+  integrity sha512-ch6OwaeaPYcova4kKZ15sbJ2hKb/VP48ZD2gE7i1J+L4MspCtBMAx8nMgz7bksc7IojCIIWuEhHibSMFH8m8oA==
+
 pg-connection-string@^2.6.4:
   version "2.6.4"
   resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.6.4.tgz#f543862adfa49fa4e14bc8a8892d2a84d754246d"
@@ -3424,6 +3480,19 @@ pg-types@^2.1.0:
     postgres-bytea "~1.0.0"
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
+
+pg@^8.12.0:
+  version "8.12.0"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.12.0.tgz#9341724db571022490b657908f65aee8db91df79"
+  integrity sha512-A+LHUSnwnxrnL/tZ+OLfqR1SxLN3c/pgDztZ47Rpbsd4jUytsTtwQo/TLPRzPJMp/1pbhYVhH9cuSZLAajNfjQ==
+  dependencies:
+    pg-connection-string "^2.6.4"
+    pg-pool "^3.6.2"
+    pg-protocol "^1.6.1"
+    pg-types "^2.1.0"
+    pgpass "1.x"
+  optionalDependencies:
+    pg-cloudflare "^1.1.1"
 
 pg@^8.7.3:
   version "8.11.5"
