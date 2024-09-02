@@ -1,7 +1,7 @@
 import { Context } from 'moleculer';
 import { Tag } from '../services/tags.service';
 import { App, APP_TYPE } from '../services/apps.service';
-import { formatDuration, intervalToDuration } from 'date-fns';
+import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
 import { Event } from '../services/events.service';
 
 export type IntegrationStats = {
@@ -23,6 +23,26 @@ export function IntegrationsMixin() {
   const schema = {
     actions: {},
     methods: {
+      calcProgression(count: number, total: number, startTime: Date) {
+        const currentTime = new Date();
+        const percentage = Math.round((count / total) * 10000) / 100;
+
+        const estimatedEndTime = new Date(
+          (currentTime.getTime() - startTime.getTime()) / (percentage / 100) + startTime.getTime(),
+        );
+        const duration = formatDuration(intervalToDuration({ start: startTime, end: currentTime }));
+        const estimatedDuration = formatDuration(
+          intervalToDuration({ start: startTime, end: estimatedEndTime }),
+        );
+        return {
+          count,
+          total,
+          percentage,
+          duration,
+          estimatedDuration,
+          text: `${count} of ${total} (${percentage}%) - ${duration} (est. ${estimatedDuration})`,
+        };
+      },
       async createOrUpdateEvent(
         ctx: Context,
         app: App,
@@ -42,6 +62,9 @@ export function IntegrationsMixin() {
             app: app.id,
           },
         });
+
+        // Let's save old events (older than 30 days) as initial events
+        initial = initial || differenceInDays(new Date(), event.startAt) > 30;
 
         if (initial) {
           event.createdAt = event.startAt;
@@ -63,10 +86,14 @@ export function IntegrationsMixin() {
           this.stats.valid.total++;
         }
       },
-      async cleanupInvalidEvents(ctx: Context, app: App) {
+      async cleanupInvalidEvents(ctx: Context, apps: App | App[]) {
+        if (!Array.isArray(apps)) {
+          apps = [apps];
+        }
+
         const invalidEvents: Event[] = await ctx.call('events.find', {
           query: {
-            app: app.id,
+            app: { $in: apps.map((a) => a.id) },
             externalId: { $nin: this.validExternalIds },
           },
         });

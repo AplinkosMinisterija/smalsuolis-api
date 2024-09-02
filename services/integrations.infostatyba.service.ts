@@ -59,6 +59,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     type InfostatybaIntegrationStats = {
       invalid: {
         no_address: number;
+        no_address_building: number;
         no_geom: number;
         no_date: number;
       };
@@ -70,17 +71,16 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     stats.invalid.no_date = 0;
     stats.invalid.no_geom = 0;
     stats.invalid.no_address = 0;
+    stats.invalid.no_address_building = 0;
 
-    const { dokTypes, appByDokType } = await this.getDokTypesData(ctx);
+    const { dokTypes, appByDokType, apps } = await this.getDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
 
     const query = [
       `limit(${limit || '1000'})`,
-      'sort(_id)',
       `(${dokTipasQuery})`,
       'dok_statusas="Galiojantis"',
       'dokumento_reg_data!=null',
-      'dokumento_reg_data>"2021-11-01"',
     ]
       .map((i) => encodeURIComponent(i))
       .join('&');
@@ -88,6 +88,10 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     const url =
       this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Statinys/:format/json?' + query;
 
+    let total = limit;
+    if (!total) {
+      total = await this.getCount(ctx, url);
+    }
     /* 
       Since Statinys doesn't have relationship to addresses dataset we can go two ways:
       1. Fetch addresses for each batch (Statinys -> Filter addresses by statinys_id)
@@ -102,6 +106,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     let skipParamString = '';
     let response: any;
+    const startTime = new Date();
     do {
       response = await ctx.call(
         'http.get',
@@ -115,10 +120,9 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
       );
 
       response._data = await this.resolveAddresses(ctx, response._data);
+      skipParamString = `&page("${response._page.next}")`;
 
       for (let entry of response._data) {
-        skipParamString = `&_id>'${entry._id}'`;
-
         if (!entry.dokumento_reg_data) {
           this.addTotal();
           this.addInvalid();
@@ -126,14 +130,19 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
           continue;
         }
 
-        let geom;
-        if (!entry.address_data?.pastatas) {
+        if (!entry.address_data) {
           this.addTotal();
           this.addInvalid();
           stats.invalid.no_address++;
           continue;
+        } else if (!entry.address_data.pastatas) {
+          this.addTotal();
+          this.addInvalid();
+          stats.invalid.no_address_building++;
+          continue;
         }
 
+        let geom;
         if (entry.address?.geom) {
           geom = entry.address.geom;
         }
@@ -182,7 +191,11 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
           return this.finishIntegration();
         }
       }
+      const progress = this.calcProgression(stats.total, total, startTime);
+      this.broker.logger.info(`Statiniai sync progress: ${progress.text}`);
     } while (response?._data?.length);
+
+    await this.cleanupInvalidEvents(ctx, apps);
 
     return this.finishIntegration();
   }
@@ -271,21 +284,35 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
   }
 
   @Method
+  async getCount(ctx: Context, url: string) {
+    const fullUrl = new URL(url);
+    if (fullUrl.search) {
+      url += '&';
+    } else if (!url.endsWith('?')) {
+      url += '?';
+    }
+
+    url += 'count()';
+
+    const totalResponse: any = await ctx.call(
+      'http.get',
+      { url, opt: { responseType: 'json' } },
+      { timeout: 0 },
+    );
+
+    return totalResponse?._data?.[0]?.['count()'];
+  }
+
+  @Method
   async prefetchAndCacheAddresses(ctx: Context) {
     const query = [`limit(10000)`, 'sort(_id)', 'select(_id,statinio_id,gat_kodas,pastatas)']
       .map((i) => encodeURIComponent(i))
       .join('&');
 
-    const urlWithoutQuery =
-      this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json?';
-    const url = urlWithoutQuery + query;
+    const baseUrl = this.settings.baseUrl + '/datasets/gov/vtpsi/infostatyba/Adresas/:format/json';
+    const url = `${baseUrl}?${query}`;
 
-    const totalResponse: any = await ctx.call(
-      'http.get',
-      { url: `${urlWithoutQuery}count()`, opt: { responseType: 'json' } },
-      { timeout: 0 },
-    );
-
+    const total = await this.getCount(ctx, baseUrl);
     let skipParamString = '';
 
     let response: any;
@@ -294,7 +321,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     const stats = {
       count: 0,
-      total: totalResponse?._data?.[0]?.['count()'],
+      total,
     };
 
     do {
@@ -327,28 +354,6 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
       const progress = this.calcProgression(stats.count, stats.total, startTime);
       this.broker.logger.info(`Address sync progress: ${progress.text}`);
     } while (response._data.length);
-  }
-
-  @Method
-  calcProgression(count: number, total: number, startTime: Date) {
-    const currentTime = new Date();
-    const percentage = Math.round((count / total) * 10000) / 100;
-
-    const estimatedEndTime = new Date(
-      (currentTime.getTime() - startTime.getTime()) / (percentage / 100) + startTime.getTime(),
-    );
-    const duration = formatDuration(intervalToDuration({ start: startTime, end: currentTime }));
-    const estimatedDuration = formatDuration(
-      intervalToDuration({ start: startTime, end: estimatedEndTime }),
-    );
-    return {
-      count,
-      total,
-      percentage,
-      duration,
-      estimatedDuration,
-      text: `${count} of ${total} (${percentage}%) - ${duration} (est. ${estimatedDuration})`,
-    };
   }
 
   @Method
@@ -390,6 +395,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     return {
       dokTypes: Object.values(dokTypesByAppKey).flat(),
+      apps: Object.values(appByKey),
       appByDokType,
     };
   }
