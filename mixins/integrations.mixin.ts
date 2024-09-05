@@ -23,6 +23,30 @@ export function IntegrationsMixin() {
   const schema = {
     actions: {},
     methods: {
+      async makeRequestWithRetries(request: Function, retryCount: number = 1) {
+        async function staleFor(seconds: number) {
+          return new Promise((resolve) => {
+            setTimeout(resolve, 1000 * seconds);
+          });
+        }
+
+        let keepTrying = true;
+        let tries = 0;
+        let response;
+        do {
+          tries++;
+          try {
+            response = await request({ retryCount, tries });
+            keepTrying = false;
+          } catch (err) {
+            await staleFor(tries);
+            keepTrying = true;
+          }
+        } while (tries < retryCount && keepTrying);
+
+        if (!response) throw Error('No response');
+        return response;
+      },
       calcProgression(count: number, total: number, startTime: Date) {
         const currentTime = new Date();
         const percentage = Math.round((count / total) * 10000) / 100;

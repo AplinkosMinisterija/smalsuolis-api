@@ -12,7 +12,6 @@ import { IntegrationsMixin, IntegrationStats } from '../mixins/integrations.mixi
 import { wktToGeoJSON } from 'betterknown';
 import { addressesSearch } from '../utils/boundaries';
 import _ from 'lodash';
-import { formatDuration, intervalToDuration } from 'date-fns';
 
 const addressCacheKey = 'integrations:infostatyba:addresses';
 @Service({
@@ -113,16 +112,18 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     let response: any;
     const startTime = new Date();
     do {
-      response = await ctx.call(
-        'http.get',
-        {
-          url: `${url}${selectFieldsQueryStr}${skipParamString}`,
-          opt: { responseType: 'json' },
-        },
-        {
-          timeout: 0,
-        },
-      );
+      response = await this.makeRequestWithRetries(() => {
+        return ctx.call(
+          'http.get',
+          {
+            url: `${url}${selectFieldsQueryStr}${skipParamString}`,
+            opt: { responseType: 'json' },
+          },
+          {
+            timeout: 0,
+          },
+        );
+      }, 5);
 
       response._data = await this.resolveAddresses(ctx, response._data);
       // skipParamString = `&page("${response._page.next}")`; // TODO
