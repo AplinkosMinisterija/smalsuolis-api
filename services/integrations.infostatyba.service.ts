@@ -26,7 +26,7 @@ const addressCacheKey = 'integrations:infostatyba:addresses';
   crons: [
     {
       name: 'integrationsInfostatyba',
-      cronTime: '0 7 * * *',
+      cronTime: '0 12 * * *',
       timeZone: 'Europe/Vilnius',
 
       async onTick() {
@@ -58,6 +58,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     type InfostatybaIntegrationStats = {
       invalid: {
+        not_applicable: number;
         no_address: number;
         no_address_building: number;
         no_geom: number;
@@ -72,6 +73,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     stats.invalid.no_geom = 0;
     stats.invalid.no_address = 0;
     stats.invalid.no_address_building = 0;
+    stats.invalid.not_applicable = 0;
 
     const { dokTypes, appByDokType, apps } = await this.getDokTypesData(ctx);
     const dokTipasQuery = dokTypes.map((i) => `dok_tipo_kodas="${i}"`).join('|');
@@ -105,13 +107,16 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     await this.prefetchAndCacheAddresses(ctx);
 
     let skipParamString = '';
+    const selectFieldsQueryStr =
+      '&sort(_id)&select(_id,dok_tipo_kodas,dok_statusas,dokumento_reg_data,statinio_id,projekto_pavadinimas,adresas,statinio_kategorija,statybos_rusis,statinio_pavadinimas,uuid,_page)';
+
     let response: any;
     const startTime = new Date();
     do {
       response = await ctx.call(
         'http.get',
         {
-          url: `${url}${skipParamString}`,
+          url: `${url}${selectFieldsQueryStr}${skipParamString}`,
           opt: { responseType: 'json' },
         },
         {
@@ -120,9 +125,22 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
       );
 
       response._data = await this.resolveAddresses(ctx, response._data);
-      skipParamString = `&page("${response._page.next}")`;
+      // skipParamString = `&page("${response._page.next}")`; // TODO
 
       for (let entry of response._data) {
+        // let's filter out what's not needed manually - it saves time.. // TODO
+        skipParamString = `&_id>'${entry._id}'`;
+        if (
+          !dokTypes.includes(entry.dok_tipo_kodas) ||
+          entry.dok_statusas !== 'Galiojantis' ||
+          !entry.dokumento_reg_data
+        ) {
+          this.addTotal();
+          this.addInvalid();
+          stats.invalid.not_applicable++;
+          continue;
+        }
+
         if (!entry.dokumento_reg_data) {
           this.addTotal();
           this.addInvalid();
@@ -305,7 +323,7 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
   @Method
   async prefetchAndCacheAddresses(ctx: Context) {
-    const query = [`limit(10000)`, 'sort(_id)', 'select(_id,statinio_id,gat_kodas,pastatas)']
+    const query = [`limit(5000)`, 'sort(_id)', 'select(_id,statinio_id,gat_kodas,pastatas)']
       .map((i) => encodeURIComponent(i))
       .join('&');
 

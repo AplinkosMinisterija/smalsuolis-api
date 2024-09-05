@@ -148,7 +148,7 @@ export default class SeedService extends moleculer.Service {
   })
   run() {
     return this.broker.waitForServices(['auth', 'users']).then(async () => {
-      await this.broker.call('seed.real', {}, { timeout: 120 * 1000 });
+      await this.broker.call('seed.real', {}, { timeout: 60 * 60 * 1000 });
     });
   }
 }
