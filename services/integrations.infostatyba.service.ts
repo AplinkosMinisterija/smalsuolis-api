@@ -4,7 +4,7 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Method, Service } from 'moleculer-decorators';
 import { Event, toEventBodyMarkdown } from './events.service';
 import { APP_KEYS, App } from './apps.service';
-import { AddressesSearchFilterRequest } from '../utils/boundaries';
+import { Address, AddressesSearchFilterRequest } from '../utils/boundaries';
 
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
@@ -115,32 +115,15 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
       response = await this.makeRequestWithRetries(() => {
         return ctx.call(
           'http.get',
-          {
-            url: `${url}${selectFieldsQueryStr}${skipParamString}`,
-            opt: { responseType: 'json' },
-          },
-          {
-            timeout: 0,
-          },
+          { url: `${url}${selectFieldsQueryStr}${skipParamString}`, opt: { responseType: 'json' } },
+          { timeout: 0 },
         );
       }, 5);
 
       response._data = await this.resolveAddresses(ctx, response._data);
-      // skipParamString = `&page("${response._page.next}")`; // TODO
 
       for (let entry of response._data) {
-        // let's filter out what's not needed manually - it saves time.. // TODO
         skipParamString = `&_id>'${entry._id}'`;
-        if (
-          !dokTypes.includes(entry.dok_tipo_kodas) ||
-          entry.dok_statusas !== 'Galiojantis' ||
-          !entry.dokumento_reg_data
-        ) {
-          this.addTotal();
-          this.addInvalid();
-          stats.invalid.not_applicable++;
-          continue;
-        }
 
         if (!entry.dokumento_reg_data) {
           this.addTotal();
@@ -251,29 +234,9 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
 
     const geomLookupByStatinioId = new Map<string, any>();
     for (const index in chunkecFilterItems) {
-      const addressesSearchFilters = chunkecFilterItems[index].map(
-        (item) =>
-          <AddressesSearchFilterRequest>{
-            streets: {
-              codes: [item.gat_kodas],
-            },
-            addresses: {
-              plot_or_building_number: {
-                exact: item.pastatas,
-              },
-            },
-          },
-      );
+      const result = await this.findRcAddresses(chunkecFilterItems[index]);
 
-      const data = await addressesSearch({
-        requestBody: {
-          filters: addressesSearchFilters,
-        },
-        size: 100,
-        srid: 4326,
-      });
-
-      data.items.forEach((address) => {
+      result.forEach((address) => {
         const geom: any = wktToGeoJSON(address.geometry.data);
         geom.crs = 'EPSG:4326';
 
@@ -300,6 +263,62 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
         address: geomLookupByStatinioId.get(item.statinio_id),
       };
     });
+  }
+
+  @Method
+  async findRcAddresses(
+    items: { gat_kodas: string | number; pastatas: string }[],
+    limit: number = 100,
+  ): Promise<Address[]> {
+    const addressesSearchFilters = items.map(
+      (item) =>
+        <AddressesSearchFilterRequest>{
+          streets: {
+            codes: [item.gat_kodas],
+          },
+          addresses: {
+            plot_or_building_number: {
+              exact: item.pastatas,
+            },
+          },
+        },
+    );
+
+    function splitToChunks(array: any[]) {
+      let result = [];
+      for (let i = 2; i > 0; i--) {
+        result.push(array.splice(0, Math.ceil(array.length / i)));
+      }
+      return result;
+    }
+
+    try {
+      const data = await addressesSearch({
+        requestBody: {
+          filters: addressesSearchFilters,
+        },
+        size: limit,
+        srid: 4326,
+      });
+
+      return data.items || [];
+    } catch (err) {
+      if (items.length > 1) {
+        // We need this part to find out which addresses do not exist
+        const [part1, part2] = splitToChunks([...items]);
+
+        const result: any[] = await Promise.all([
+          this.findRcAddresses(part1),
+          this.findRcAddresses(part2),
+        ]);
+
+        return result.flat();
+      }
+
+      this.broker.logger.error('Infostatyba sync RC address error item:', items);
+    }
+
+    return [];
   }
 
   @Method
@@ -344,16 +363,13 @@ export default class IntegrationsInfostatybaService extends moleculer.Service {
     };
 
     do {
-      response = await ctx.call(
-        'http.get',
-        {
-          url: `${url}${skipParamString}`,
-          opt: { responseType: 'json' },
-        },
-        {
-          timeout: 0,
-        },
-      );
+      response = await this.makeRequestWithRetries(() => {
+        return ctx.call(
+          'http.get',
+          { url: `${url}${skipParamString}`, opt: { responseType: 'json' } },
+          { timeout: 0 },
+        );
+      }, 5);
 
       const items = response._data || [];
 
