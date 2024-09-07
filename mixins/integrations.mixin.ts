@@ -3,6 +3,7 @@ import { Tag } from '../services/tags.service';
 import { App, APP_TYPE } from '../services/apps.service';
 import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
 import { Event } from '../services/events.service';
+import { DBPagination } from '../types';
 
 export type IntegrationStats = {
   total: number;
@@ -115,18 +116,37 @@ export function IntegrationsMixin() {
           apps = [apps];
         }
 
-        const invalidEvents: Event[] = await ctx.call('events.find', {
-          query: {
-            app: { $in: apps.map((a) => a.id) },
-            externalId: { $nin: this.validExternalIds },
-          },
-        });
+        const validExternalIds = this.validExternalIds || [];
+        const query = {
+          app: { $in: apps.map((a) => a.id) },
+        };
+
+        let itemsCount: number = await ctx.call('events.count', { query });
+        let page = 1;
         this.stats.invalid.removed = 0;
-        for (const e of invalidEvents) {
-          await ctx.call('events.remove', { id: e.id });
-          this.addTotal();
-          this.addInvalid();
-          this.stats.invalid.removed++;
+
+        while (itemsCount > 0) {
+          // remove with pagination
+          const eventsPage: DBPagination<Event> = await ctx.call('events.list', {
+            query,
+            pageSize: 10000,
+            page,
+            fields: ['id'],
+          });
+
+          itemsCount = itemsCount - eventsPage.rows.length;
+          page++;
+
+          const invalidEvents = eventsPage.rows.filter(
+            (item) => !validExternalIds.includes(item.id),
+          );
+
+          for (const e of invalidEvents) {
+            await ctx.call('events.remove', { id: e.id });
+            this.addTotal();
+            this.addInvalid();
+            this.stats.invalid.removed++;
+          }
         }
       },
       addTotal() {
