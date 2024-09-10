@@ -122,8 +122,10 @@ export function IntegrationsMixin() {
         };
 
         let itemsCount: number = await ctx.call('events.count', { query });
+        const totalCount = itemsCount;
         let page = 1;
         this.stats.invalid.removed = 0;
+        const startTime = new Date();
 
         while (itemsCount > 0) {
           // remove with pagination
@@ -147,6 +149,9 @@ export function IntegrationsMixin() {
             this.addInvalid();
             this.stats.invalid.removed++;
           }
+
+          const progress = this.calcProgression(totalCount - itemsCount, totalCount, startTime);
+          this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },
       addTotal() {
