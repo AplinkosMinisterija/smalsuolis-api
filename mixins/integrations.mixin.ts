@@ -121,7 +121,7 @@ export function IntegrationsMixin() {
           app: { $in: apps.map((a) => a.id) },
         };
 
-        let itemsCount: number = await ctx.call('events.count', { query });
+        let itemsCount: number = await ctx.call('events.count', { query, scope: false });
         const totalCount = itemsCount;
         let page = 1;
         this.stats.invalid.removed = 0;
@@ -134,13 +134,18 @@ export function IntegrationsMixin() {
             pageSize: 10000,
             page,
             fields: ['id'],
+            scope: false, // needed for not skipping any events
           });
 
           itemsCount = itemsCount - eventsPage.rows.length;
           page++;
 
+          if (!eventsPage.rows.length) {
+            itemsCount = 0;
+          }
+
           const invalidEvents = eventsPage.rows.filter(
-            (item) => !validExternalIds.includes(item.id),
+            (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt,
           );
 
           for (const e of invalidEvents) {

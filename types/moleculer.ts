@@ -40,7 +40,7 @@ export interface CommonFields {
   updatedBy: User['id'];
   updatedAt: Date;
   deletedBy: User['id'];
-  detetedAt: Date;
+  deletedAt: Date;
 }
 
 export interface CommonPopulates {
