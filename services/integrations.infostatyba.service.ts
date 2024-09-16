@@ -25,7 +25,7 @@ const addressCacheKey = 'integrations:infostatyba:addresses';
   crons: [
     {
       name: 'integrationsInfostatyba',
-      cronTime: '0 10 * * *',
+      cronTime: '0 0 * * *',
       timeZone: 'Europe/Vilnius',
 
       async onTick() {

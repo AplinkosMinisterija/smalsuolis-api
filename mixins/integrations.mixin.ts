@@ -22,7 +22,17 @@ export type IntegrationStats = {
 
 export function IntegrationsMixin() {
   const schema = {
-    actions: {},
+    actions: {
+      sync: {
+        rest: 'POST /sync',
+        handler(ctx: Context) {
+          ctx.call(`${this.name}.getData`);
+          return {
+            success: true,
+          };
+        },
+      },
+    },
     methods: {
       async makeRequestWithRetries(request: Function, retryCount: number = 1) {
         async function staleFor(seconds: number) {
