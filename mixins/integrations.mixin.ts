@@ -25,6 +25,7 @@ export function IntegrationsMixin() {
     actions: {
       sync: {
         rest: 'POST /sync',
+        timeout: 0,
         handler(ctx: Context) {
           ctx.call(`${this.name}.getData`);
           return {
