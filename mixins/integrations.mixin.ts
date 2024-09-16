@@ -127,15 +127,18 @@ export function IntegrationsMixin() {
         this.stats.invalid.removed = 0;
         const startTime = new Date();
 
+        const fields = ['id', 'deletedAt', 'externalId'];
+
         while (itemsCount > 0) {
           // remove with pagination
-          const eventsPage: DBPagination<Event> = await ctx.call('events.list', {
-            query,
-            pageSize: 10000,
-            page,
-            fields: ['id'],
-            scope: false, // needed for not skipping any events
-          });
+          const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
+            await ctx.call('events.list', {
+              query,
+              pageSize: 10000,
+              page,
+              fields,
+              scope: false, // needed for not skipping any events
+            });
 
           itemsCount = itemsCount - eventsPage.rows.length;
           page++;
