@@ -9,6 +9,7 @@ import transformation from 'transform-coordinates';
 // @ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
 import { getFeatureCollection } from 'geojsonjs';
+import { IntegrationsMixin, IntegrationStats } from '../mixins/integrations.mixin';
 
 const StatusLabels = {
   FINISHED: 'Įžuvinta',
@@ -54,7 +55,7 @@ interface FishStocking {
   settings: {
     baseUrl: 'https://zuvinimas.biip.lt',
   },
-  mixins: [Cron],
+  mixins: [Cron, IntegrationsMixin()],
   crons: [
     {
       name: 'integrationsFishStockings',
@@ -85,17 +86,7 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
     },
   })
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
-    const stats = {
-      total: 0,
-      valid: {
-        total: 0,
-        inserted: 0,
-        updated: 0,
-      },
-      invalid: {
-        total: 0,
-      },
-    };
+    this.startIntegration();
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
@@ -103,110 +94,67 @@ export default class IntegrationsFishStockingsService extends moleculer.Service 
       },
     });
 
-    if (app?.id) {
-      const url =
-        this.settings.baseUrl +
-        '/api/public/fishStockings?' +
-        new URLSearchParams({
-          filter: JSON.stringify({
-            status: ['FINISHED', 'INSPECTED', 'UPCOMING', 'ONGOING'],
-          }),
-          sort: '-eventTime',
-          limit: ctx.params.limit.toString(),
-        });
+    if (!app?.id) return;
 
-      const response: FishStocking[] = await ctx.call(
-        'http.get',
-        {
-          url: url,
-          opt: { responseType: 'json' },
-        },
-        {
-          timeout: 0,
-        },
-      );
-
-      const ids = [];
-
-      for (let entry of response) {
-        stats.total++;
-
-        ids.push(entry.id);
-
-        const fishesNames = entry.batches
-          ?.map(
-            (batch) =>
-              `${batch.fishType.label} (${batch.fishAge.label.toLowerCase()}) ${
-                batch.reviewAmount || batch.amount
-              } vnt.`,
-          )
-          .join(', ');
-        const transform = transformation('EPSG:4326', '3346');
-        const transformedCoordinates = transform.forward([
-          entry.coordinates.x,
-          entry.coordinates.y,
-        ]);
-
-        const geom = getFeatureCollection({
-          type: 'Point',
-          coordinates: transformedCoordinates,
-        });
-
-        const bodyJSON = [
-          { title: 'Būsena', value: StatusLabels[entry.status] },
-          { title: 'Žuvys', value: fishesNames || '-' },
-        ];
-
-        const event: Partial<Event> = {
-          name: `${entry.location.name} ${entry.location.cadastral_id}, ${entry.location.municipality.name}`,
-          body: toEventBodyMarkdown(bodyJSON),
-          startAt: new Date(entry.eventTime),
-          geom,
-          app: app.id,
-          isFullDay: false,
-          externalId: entry.id?.toString(),
-        };
-
-        if (ctx.params.initial) {
-          event.createdAt = event.startAt;
-        }
-
-        const existingEvent: Event = await ctx.call('events.findOne', {
-          query: {
-            app: app.id,
-            externalId: entry.id,
-          },
-        });
-
-        if (existingEvent?.id) {
-          await ctx.call('events.update', {
-            id: Number(existingEvent.id),
-            ...event,
-          });
-          stats.valid.total++;
-          stats.valid.updated++;
-        } else {
-          await ctx.call('events.create', event);
-          stats.valid.total++;
-          stats.valid.inserted++;
-        }
-      }
-
-      const invalidEvents: Event[] = await ctx.call('events.find', {
-        query: {
-          app: app.id,
-          externalId: { $nin: ids },
-        },
+    const url =
+      this.settings.baseUrl +
+      '/api/public/fishStockings?' +
+      new URLSearchParams({
+        filter: JSON.stringify({
+          status: ['FINISHED', 'INSPECTED', 'UPCOMING', 'ONGOING'],
+        }),
+        sort: '-eventTime',
+        limit: ctx.params.limit.toString(),
       });
 
-      for (const e of invalidEvents) {
-        const deleted = await ctx.call('events.remove', { id: e.id });
-        stats.total++;
-        stats.invalid.total++;
-      }
+    const response: FishStocking[] = await ctx.call(
+      'http.get',
+      {
+        url: url,
+        opt: { responseType: 'json' },
+      },
+      {
+        timeout: 0,
+      },
+    );
+
+    for (let entry of response) {
+      const fishesNames = entry.batches
+        ?.map(
+          (batch) =>
+            `${batch.fishType.label} (${batch.fishAge.label.toLowerCase()}) ${
+              batch.reviewAmount || batch.amount
+            } vnt.`,
+        )
+        .join(', ');
+      const transform = transformation('EPSG:4326', '3346');
+      const transformedCoordinates = transform.forward([entry.coordinates.x, entry.coordinates.y]);
+
+      const geom = getFeatureCollection({
+        type: 'Point',
+        coordinates: transformedCoordinates,
+      });
+
+      const bodyJSON = [
+        { title: 'Būsena', value: StatusLabels[entry.status] },
+        { title: 'Žuvys', value: fishesNames || '-' },
+      ];
+
+      const event: Partial<Event> = {
+        name: `${entry.location.name} ${entry.location.cadastral_id}, ${entry.location.municipality.name}`,
+        body: toEventBodyMarkdown(bodyJSON),
+        startAt: new Date(entry.eventTime),
+        geom,
+        app: app.id,
+        isFullDay: false,
+        externalId: entry.id?.toString(),
+      };
+
+      await this.createOrUpdateEvent(ctx, app, event, !!ctx.params.initial);
     }
 
-    this.broker.emit('integrations.sync.finished');
-    return stats;
+    await this.cleanupInvalidEvents(ctx, app);
+
+    return this.finishIntegration();
   }
 }

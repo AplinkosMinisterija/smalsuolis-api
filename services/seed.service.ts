@@ -97,14 +97,14 @@ export default class SeedService extends moleculer.Service {
 
   @Method
   async infostatyba(ctx: Context, appsIds: App['id'][]) {
-    await this.broker.waitForServices(['datagov', 'events']);
+    await this.broker.waitForServices(['integrations.infostatyba', 'events']);
 
     const count: number = await ctx.call('events.count', {
       query: { app: { $in: appsIds } },
     });
 
     if (!count) {
-      await ctx.call('datagov.infostatyba', { limit: 100, initial: true });
+      await ctx.call('integrations.infostatyba.getData', { limit: 100, initial: true });
     }
   }
 
@@ -148,7 +148,7 @@ export default class SeedService extends moleculer.Service {
   })
   run() {
     return this.broker.waitForServices(['auth', 'users']).then(async () => {
-      await this.broker.call('seed.real', {}, { timeout: 120 * 1000 });
+      await this.broker.call('seed.real', {}, { timeout: 60 * 60 * 1000 });
     });
   }
 }

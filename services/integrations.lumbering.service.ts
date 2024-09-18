@@ -9,7 +9,7 @@ import unzipper from 'unzipper';
 import stream from 'node:stream';
 
 import { Event, toEventBodyMarkdown } from './events.service';
-import { IntegrationsMixin } from '../mixins/integrations.mixin';
+import { IntegrationsMixin, IntegrationStats } from '../mixins/integrations.mixin';
 
 @Service({
   name: 'integrations.lumbering',
@@ -47,17 +47,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
     },
   })
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
-    const stats = {
-      total: 0,
-      valid: {
-        total: 0,
-        inserted: 0,
-        updated: 0,
-      },
-      invalid: {
-        total: 0,
-      },
-    };
+    this.startIntegration();
 
     const app: App = await ctx.call('apps.findOne', {
       query: {
@@ -65,9 +55,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
       },
     });
 
-    if (!app?.id) {
-      return;
-    }
+    if (!app?.id) return;
 
     const response: any = await ctx.call(
       'http.get',
@@ -161,38 +149,11 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         tagsData,
       };
 
-      if (ctx.params.initial) {
-        event.createdAt = event.startAt;
-      }
-
-      stats.total++;
-
-      if (!event.externalId) {
-        stats.invalid.total++;
-      } else {
-        const existingEvent: Event = await ctx.call('events.findOne', {
-          query: {
-            externalId: event.externalId,
-            app: app.id,
-          },
-        });
-
-        if (existingEvent?.id) {
-          await ctx.call('events.update', {
-            id: Number(existingEvent.id),
-            ...event,
-          });
-          stats.valid.total++;
-          stats.valid.updated++;
-        } else {
-          await ctx.call('events.create', event);
-          stats.valid.total++;
-          stats.valid.inserted++;
-        }
-      }
+      await this.createOrUpdateEvent(ctx, app, event, !!ctx.params.initial);
     }
 
-    this.broker.emit('integrations.sync.finished');
-    return stats;
+    await this.cleanupInvalidEvents(ctx, app);
+
+    return this.finishIntegration();
   }
 }

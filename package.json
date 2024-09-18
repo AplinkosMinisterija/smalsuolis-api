@@ -13,7 +13,8 @@
     "lint:sarif": "set SARIF_ESLINT_EMBED=true && yarn run lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif",
     "dc:up": "docker-compose -p smalsuolis-api up --build -d",
     "dc:down": "docker-compose -p smalsuolis-api down",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "openapi-ts:boundaries": "openapi-ts -f openapi-ts.boundaries.config.ts"
   },
   "keywords": [
     "microservices",
@@ -45,9 +46,11 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
+    "@hey-api/openapi-ts": "^0.48.2",
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
     "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.114.0",
+    "betterknown": "^1.0.4",
     "biip-auth-nodejs": "github:DadPatch/biip-auth-nodejs",
     "date-fns": "^3.3.1",
     "dotenv": "^16.0.0",
