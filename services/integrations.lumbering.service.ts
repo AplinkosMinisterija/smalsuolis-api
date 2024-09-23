@@ -105,7 +105,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
       feature.geometry.crs = 'EPSG:4326';
 
       const bodyJSON = [
-        { title: 'VĮ VMU padalinys', value: `${feature.properties.padalinys} RP` },
+        { title: 'Struktūrinis padalinys', value: `${feature.properties.padalinys} RP` },
         { title: 'Girininkija', value: `${feature.properties.girininkija} girininkija` },
         {
           title: 'Galioja',
