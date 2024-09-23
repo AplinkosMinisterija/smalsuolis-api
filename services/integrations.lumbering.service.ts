@@ -104,6 +104,13 @@ export default class IntegrationsLumberingService extends moleculer.Service {
     for (const feature of features) {
       feature.geometry.crs = 'EPSG:4326';
 
+      const ownershipTypesByDigit: any = {
+        1: 'Privati',
+        2: 'Valstybinė',
+        3: 'Privati',
+      };
+      const firstIdDigit = Number(`${feature.properties.id}`.slice(0, 1));
+
       const bodyJSON = [
         { title: 'VĮ VMU padalinys', value: `${feature.properties.padalinys} RP` },
         { title: 'Girininkija', value: `${feature.properties.girininkija} girininkija` },
@@ -117,6 +124,7 @@ export default class IntegrationsLumberingService extends moleculer.Service {
         { title: 'Kirtimo rūšis', value: feature.properties.kirtimo_rusis },
         { title: 'Vyraujantys medžiai', value: feature.properties.vyraujantys_medziai },
         { title: 'Atkūrimo būdas', value: feature.properties.atkurimo_budas },
+        { title: 'Nuosavybės forma', value: ownershipTypesByDigit[firstIdDigit] || '-' },
       ];
 
       const tagsIds: number[] = await this.findOrCreateTags(
