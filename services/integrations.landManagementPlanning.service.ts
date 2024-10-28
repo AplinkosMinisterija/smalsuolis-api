@@ -9,7 +9,7 @@ import Cron from '@r2d2bzh/moleculer-cron';
 import { IntegrationsMixin } from '../mixins/integrations.mixin';
 
 import { format, isSameDay, subDays } from 'date-fns'; // Import date-fns functions
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 import { Event, toEventBodyMarkdown } from './events.service';
 
 export interface LandManagementPlanning {
@@ -26,7 +26,6 @@ const isYesterday = (date: string) => {
   const yesterday = subDays(new Date(), 1);
   return isSameDay(date, yesterday);
 };
-
 const waitLoader = async (page: Page) => {
   const waitIndicatorSelector = '#j_idt27_title';
 
@@ -56,6 +55,18 @@ const navigateToNextPage = async (page: Page) => {
 
   return true;
 };
+
+async function getBrowser(): Promise<Browser> {
+  try {
+    return puppeteer.connect({
+      browserWSEndpoint: process.env.CHROME_WS_ENDPOINT || 'ws://localhost:9321',
+      //@ts-ignore
+      ignoreHTTPSErrors: true,
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 const scrapeData = async (page: Page, initial: boolean) => {
   const data = [];
@@ -94,9 +105,9 @@ const scrapeData = async (page: Page, initial: boolean) => {
     });
 
     if (!initial) {
-      const yesterdayItems = itemsData.filter((item) =>
-        isYesterday(format(new Date(item.date), 'yyyy-MM-dd')),
-      );
+      const yesterdayItems = itemsData.filter((item) => {
+        return isYesterday(format(new Date(item.startAt), 'yyyy-MM-dd'));
+      });
       data.push(...yesterdayItems);
 
       if (yesterdayItems.length !== itemsData.length) break;
@@ -156,7 +167,9 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
     if (!app?.id) return;
 
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await getBrowser();
+    if (!browser) return;
+
     const page = await browser.newPage();
 
     await page.goto(this.settings.baseUrl, {
@@ -173,7 +186,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
     await browser.close();
 
-    //const uniqueCadastralNumbers = [...new Set(data.flatMap((item) => item.cadastralNumbers))];
+    const uniqueCadastralNumbers = [...new Set(data.flatMap((item) => item.cadastralNumbers))];
     // const geomMap = await fetchGeometryData(uniqueCadastralNumbers);
     const geomMap = new Map();
     const dataWithGeom: LandManagementPlanning[] = data.map((item) => ({
@@ -193,7 +206,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         name: entry.name,
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(entry.startAt),
-        geom: entry.geom,
+        geom: null,
         app: app.id,
         isFullDay: false,
         externalId: entry.externalId,
