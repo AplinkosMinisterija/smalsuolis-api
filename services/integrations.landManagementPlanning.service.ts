@@ -270,7 +270,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         externalId: entry.externalId,
       };
 
-      await this.createOrUpdateEvent(ctx, app, event, !!ctx.params.initial);
+      await this.createOrUpdateEvent(ctx, app, event, !!initial);
     }
 
     await this.cleanupInvalidEvents(ctx, app);
