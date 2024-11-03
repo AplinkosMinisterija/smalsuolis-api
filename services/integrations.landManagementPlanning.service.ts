@@ -232,6 +232,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         const geometries = item.cadastralNumbers
           .map((cadastralNumber: string) => geomMap.get(cadastralNumber))
           .filter((data: Feature) => data && data.geometry);
+
         if (geometries.length === 0) return acc;
 
         const combinedGeometry =
