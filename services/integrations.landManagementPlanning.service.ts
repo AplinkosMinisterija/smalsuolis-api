@@ -4,12 +4,13 @@ import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
 import { App, APP_KEYS } from './apps.service';
 
-// @ts-ignore
+//@ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
-import { IntegrationsMixin } from '../mixins/integrations.mixin';
-
-import { format, isSameDay, subDays } from 'date-fns'; // Import date-fns functions
+import { wktToGeoJSON } from 'betterknown';
+import { isSameDay, subDays } from 'date-fns';
+import { Feature } from 'geojsonjs';
 import puppeteer, { Browser, Page } from 'puppeteer';
+import { IntegrationsMixin } from '../mixins/integrations.mixin';
 import { Event, toEventBodyMarkdown } from './events.service';
 
 export interface LandManagementPlanning {
@@ -22,94 +23,156 @@ export interface LandManagementPlanning {
   geom: any;
 }
 
-const isYesterday = (date: string) => {
-  const yesterday = subDays(new Date(), 1);
-  return isSameDay(date, yesterday);
-};
+export interface GeometryResponse {
+  items: {
+    unique_number: number;
+    cadastral_number: string;
+    updated_at: string;
+    area_ha: number;
+    geometry: { srid: number; data: string };
+  }[];
+  total: number;
+  current_page: string;
+  current_page_backwards: string;
+  previous_page: string;
+  next_page: string;
+}
+
+const isYesterday = (date: Date) => isSameDay(date, subDays(new Date(), 1));
+
 const waitLoader = async (page: Page) => {
   const waitIndicatorSelector = '#j_idt27_title';
-
   await page.waitForSelector(waitIndicatorSelector, { visible: true });
   await page.waitForSelector(waitIndicatorSelector, { hidden: true });
 };
 
-const navigateToNextPage = async (page: Page) => {
+const navigateToNextPage = async (page: Page): Promise<boolean> => {
   const nextButtonSelector = 'a.ui-paginator-next';
-
   try {
     await page.waitForSelector(nextButtonSelector, { timeout: 2000 });
-
     const isDisabled = await page.evaluate((selector) => {
       const nextButton = document.querySelector(selector);
       return nextButton && nextButton.classList.contains('ui-state-disabled');
     }, nextButtonSelector);
 
-    if (isDisabled) {
-      return false;
-    }
+    if (isDisabled) return false;
 
     await page.click(nextButtonSelector);
-
     await waitLoader(page);
-  } catch {}
-
+  } catch (error) {
+    console.error('Navigation Error:', error);
+    return false;
+  }
   return true;
 };
 
-async function getBrowser(): Promise<Browser> {
+const getBrowser = async (): Promise<Browser | null> => {
   try {
-    return puppeteer.connect({
+    return await puppeteer.connect({
       browserWSEndpoint: process.env.CHROME_WS_ENDPOINT || 'ws://localhost:9321',
-      //@ts-ignore
-      ignoreHTTPSErrors: true,
+      acceptInsecureCerts: true,
     });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error('Browser Connection Error:', error);
+    return null;
   }
-}
+};
 
-const scrapeData = async (page: Page, initial: boolean) => {
-  const data = [];
+const getGeometryData = async (cadastralNumbers: string[]): Promise<Map<string, Feature>> => {
+  const url =
+    'https://boundaries.biip.lt/v1/parcels/search?sort_by=cadastral_number&sort_order=asc&geometry_output_format=ewkt&srid=3346&size=100';
+  const headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Linux"',
+    Referer: 'https://boundaries.biip.lt/',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  };
+
+  const geomMap = new Map();
+  const chunkSize = 100;
+
+  try {
+    for (let i = 0; i < cadastralNumbers.length; i += chunkSize) {
+      const chunk = cadastralNumbers.slice(i, i + chunkSize);
+      const filters = chunk.map((cadastralNumber) => ({
+        parcels: { cadastral_number: { exact: cadastralNumber } },
+      }));
+
+      const response = await fetch(url, {
+        headers,
+        body: JSON.stringify({ filters }),
+        method: 'POST',
+      });
+
+      const data: GeometryResponse = await response.json();
+      data.items.forEach((item) => {
+        const geom = {
+          geometry: wktToGeoJSON(item?.geometry?.data?.replace('SRID=3346;', '')),
+          type: 'Feature',
+        };
+        geomMap.set(item?.cadastral_number, geom);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching geometry data:', error);
+  }
+  return geomMap;
+};
+
+const scrapeData = async (url: string, initial: boolean, limit: number) => {
+  const browser = await getBrowser();
+  if (!browser) return [];
+
+  const page = await browser.newPage();
+  await page.goto(url, { waitUntil: 'networkidle0' });
+  const selectSelector = '#mainform\\:docs\\:j_id17';
+  await page.waitForSelector(selectSelector);
+  await page.select(selectSelector, '100');
+  await waitLoader(page);
+
+  const data: any[] = [];
   let hasNextPage = true;
 
   while (hasNextPage) {
-    const itemsData = await page?.evaluate(() => {
+    const itemsData = await page.evaluate(() => {
       const items = document.querySelectorAll('#mainform\\:docs_data > tr');
       const cadastralNumberPattern = /\d+\/\d+:\d+/;
-      const data = [];
 
-      for (const itemElement of items) {
+      const data = Array.from(items).reduce((acc, itemElement) => {
         const values = Array.from(itemElement.querySelectorAll('td'));
         const matches = values[2]?.innerText?.match(cadastralNumberPattern);
 
-        if (matches?.length) {
-          const item: any = { cadastralNumbers: matches };
+        if (!matches?.length) return acc;
 
-          ['startAt', 'serviceNo', 'name', 'municipality', 'status'].forEach((label, index) => {
-            item[label] = values[index]?.innerText.trim() || null;
-          });
+        const item: any = { cadastralNumbers: matches };
 
-          const plainExternalId = item.date + item.serviceNo + matches.toString();
+        ['startAt', 'serviceNo', 'name', 'municipality', 'status'].forEach((label, index) => {
+          item[label] = values[index]?.innerText.trim() || null;
+        });
 
-          item.externalId = btoa(
-            encodeURIComponent(plainExternalId).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-              String.fromCharCode(parseInt(p1, 16)),
-            ),
-          );
+        item.externalId = btoa(
+          encodeURIComponent(item.date + item.serviceNo + matches.toString()).replace(
+            /%([0-9A-F]{2})/g,
+            (_, p1) => String.fromCharCode(parseInt(p1, 16)),
+          ),
+        );
 
-          data.push(item);
-        }
-      }
+        acc.push(item);
+        return acc;
+      }, []);
 
       return data;
     });
 
-    if (!initial) {
-      const yesterdayItems = itemsData.filter((item) => {
-        return isYesterday(format(new Date(item.startAt), 'yyyy-MM-dd'));
-      });
+    if (limit) {
+      data.push(...itemsData);
+      if (data.length >= limit) break;
+    } else if (!initial) {
+      const yesterdayItems = itemsData.filter((item) => isYesterday(new Date(item.startAt)));
       data.push(...yesterdayItems);
-
       if (yesterdayItems.length !== itemsData.length) break;
     } else {
       data.push(...itemsData);
@@ -118,6 +181,7 @@ const scrapeData = async (page: Page, initial: boolean) => {
     hasNextPage = await navigateToNextPage(page);
   }
 
+  await browser.close();
   return data;
 };
 
@@ -130,7 +194,7 @@ const scrapeData = async (page: Page, initial: boolean) => {
   crons: [
     {
       name: 'integrationsLandManagementPlanning',
-      cronTime: '0 3 * * *',
+      cronTime: '0 5 * * *',
       timeZone: 'Europe/Vilnius',
       async onTick() {
         await this.call('integrations.landManagementPlanning.getData', {
@@ -144,59 +208,52 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
   @Action({
     timeout: 0,
     params: {
-      limit: {
-        type: 'number',
-        optional: true,
-        default: 0,
-      },
-      initial: {
-        type: 'boolean',
-        optional: true,
-        default: false,
-      },
+      limit: { type: 'number', optional: true, default: 0 },
+      initial: { type: 'boolean', optional: true, default: false },
     },
   })
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
     this.startIntegration();
 
+    const { limit, initial } = ctx.params;
+
     const app: App = await ctx.call('apps.findOne', {
-      query: {
-        key: APP_KEYS.zemetvarkosPlanavimas,
-      },
+      query: { key: APP_KEYS.zemetvarkosPlanavimas },
     });
 
     if (!app?.id) return;
 
-    const browser = await getBrowser();
-    if (!browser) return;
-
-    const page = await browser.newPage();
-
-    await page.goto(this.settings.baseUrl, {
-      waitUntil: 'networkidle0',
-    });
-
-    const selectSelector = '#mainform\\:docs\\:j_id17';
-
-    await page.waitForSelector(selectSelector);
-    await page.select(selectSelector, '100');
-    await waitLoader(page);
-
-    const data = await scrapeData(page, ctx.params.initial);
-
-    await browser.close();
-
+    const data = await scrapeData(this.settings.baseUrl, initial, limit);
     const uniqueCadastralNumbers = [...new Set(data.flatMap((item) => item.cadastralNumbers))];
-    // const geomMap = await fetchGeometryData(uniqueCadastralNumbers);
-    const geomMap = new Map();
-    const dataWithGeom: LandManagementPlanning[] = data.map((item) => ({
-      ...item,
-      geom: item.cadastralNumbers
-        .map((cadastralNumber: string) => geomMap.get(cadastralNumber))
-        .filter(Boolean),
-    }));
+    const geomMap = await getGeometryData(uniqueCadastralNumbers);
 
-    for (let entry of dataWithGeom) {
+    const dataWithGeom: LandManagementPlanning[] = data.reduce(
+      (acc: LandManagementPlanning[], item) => {
+        const geometries = item.cadastralNumbers
+          .map((cadastralNumber: string) => geomMap.get(cadastralNumber))
+          .filter((data: Feature) => data && data.geometry);
+        if (geometries.length === 0) return acc;
+
+        const combinedGeometry =
+          geometries.length > 1
+            ? {
+                type: `Multi${geometries[0]?.geometry?.type}`,
+                coordinates: geometries.map((data: Feature) => data.geometry.coordinates),
+              }
+            : geometries[0].geometry;
+
+        const featureCollection = {
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', geometry: combinedGeometry }],
+        };
+
+        acc.push({ ...item, geom: featureCollection });
+        return acc;
+      },
+      [],
+    );
+
+    for (const entry of dataWithGeom) {
       const bodyJSON = [
         { title: 'Būsena', value: entry?.status || '-' },
         { title: 'Paslaugos numeris', value: entry?.serviceNo || '-' },
@@ -206,7 +263,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         name: entry.name,
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(entry.startAt),
-        geom: null,
+        geom: entry.geom,
         app: app.id,
         isFullDay: false,
         externalId: entry.externalId,
@@ -216,7 +273,6 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
     }
 
     await this.cleanupInvalidEvents(ctx, app);
-
     return this.finishIntegration();
   }
 }

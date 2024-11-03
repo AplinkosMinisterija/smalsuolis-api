@@ -23,11 +23,11 @@ services:
       WORKSPACE_DELETE_EXPIRED: true
       MAX_CONCURRENT_SESSIONS: 10
       MAX_QUEUE_LENGTH: 10
-      CONNECTION_TIMEOUT: 600000
+      CONNECTION_TIMEOUT:  3600000
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://127.0.0.1:3000/metrics || exit 1" ]
     networks:
-      - tools-network
+      - internal
     deploy:
       resources:
         limits:
@@ -46,7 +46,6 @@ services:
 
 networks:
   internal:
-  tools-network:
 
 volumes:
   data:
