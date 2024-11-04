@@ -91,7 +91,7 @@ const getGeometryData = async (cadastralNumbers: string[]): Promise<Map<string, 
 
       const data = await parcelsSearch({
         requestBody: { filters },
-        size: 100,
+        size: chunkSize,
       });
 
       data.items.forEach((item) => {
@@ -197,7 +197,6 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
     timeout: 0,
     params: {
       limit: { type: 'number', optional: true, default: 0 },
-      initial: { type: 'boolean', optional: true, default: false },
     },
   })
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
@@ -254,14 +253,13 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         startAt: new Date(entry.startAt),
         geom: entry.geom,
         app: app.id,
-        isFullDay: false,
+        isFullDay: true,
         externalId: entry.externalId,
       };
 
       await this.createOrUpdateEvent(ctx, app, event, !!initial);
     }
 
-    await this.cleanupInvalidEvents(ctx, app);
     return this.finishIntegration();
   }
 }
