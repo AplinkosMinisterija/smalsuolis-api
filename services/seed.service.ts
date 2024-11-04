@@ -71,9 +71,9 @@ export default class SeedService extends moleculer.Service {
     const apps: Record<string, App['id'][]> = await this.seedApps(ctx);
 
     await this.landManagementPlanning(ctx, apps.zemetvarkosPlanavimas);
-    await this.infostatyba(ctx, apps.infostatyba);
-    await this.fishStockings(ctx, apps.izuvinimas);
-    await this.lumbering(ctx, apps.miskoKirtimai);
+    // await this.infostatyba(ctx, apps.infostatyba);
+    // await this.fishStockings(ctx, apps.izuvinimas);
+    // await this.lumbering(ctx, apps.miskoKirtimai);
     return true;
   }
 
@@ -126,7 +126,7 @@ export default class SeedService extends moleculer.Service {
 
     if (!count) {
       await ctx.call('integrations.landManagementPlanning.getData', {
-        limit: process.env.NODE_ENV === 'local' ? 100 : 0,
+        //limit: process.env.NODE_ENV === 'local' ? 100 : 0,
         initial: true,
       });
     }

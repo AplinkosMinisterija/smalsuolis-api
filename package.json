@@ -50,6 +50,7 @@
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
     "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.114.0",
+    "@turf/turf": "^7.1.0",
     "betterknown": "^1.0.4",
     "biip-auth-nodejs": "github:DadPatch/biip-auth-nodejs",
     "date-fns": "^3.3.1",
