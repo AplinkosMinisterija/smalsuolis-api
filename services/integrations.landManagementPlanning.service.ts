@@ -75,14 +75,12 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
         const combinedGeometry =
           geometries.length > 1
-            ? geometries.reduce((accGeom: any, geom: any) => {
-                return accGeom ? turf.union(accGeom, geom) : geom;
-              }, null)
+            ? turf.union(turf.featureCollection([...geometries]))
             : geometries[0];
 
-        const featureCollection = turf.featureCollection([combinedGeometry]);
+        combinedGeometry.geometry.crs = 'EPSG:4326';
 
-        acc.push({ ...item, geom: featureCollection });
+        acc.push({ ...item, geom: combinedGeometry });
         return acc;
       },
       [],
@@ -112,9 +110,11 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
   @Method
   async waitLoader(page: Page) {
-    const waitIndicatorSelector = '#j_idt27_title';
-    await page.waitForSelector(waitIndicatorSelector, { visible: true });
-    await page.waitForSelector(waitIndicatorSelector, { hidden: true });
+    try {
+      const waitIndicatorSelector = '#j_idt27_title';
+      await page.waitForSelector(waitIndicatorSelector, { visible: true, timeout: 5000 });
+      await page.waitForSelector(waitIndicatorSelector, { hidden: true });
+    } catch {}
   }
 
   @Method
@@ -173,7 +173,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
           const geometry = wkx.Geometry.parse(item?.geometry?.data).toGeoJSON();
 
           const geom = {
-            geometry: { ...geometry, crs: 'EPSG:4326' },
+            geometry,
             type: 'Feature',
           };
           geomMap.set(item?.cadastral_number, geom);
@@ -203,7 +203,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
     while (hasNextPage) {
       const itemsData = await page.evaluate(() => {
         const items = document.querySelectorAll('#mainform\\:docs_data > tr');
-        const cadastralNumberPattern = /\d+\/\d+:\d+/;
+        const cadastralNumberPattern = /\d+\/\d+:\d+/g;
 
         const data = Array.from(items).reduce((acc, itemElement) => {
           const values = Array.from(itemElement.querySelectorAll('td'));
