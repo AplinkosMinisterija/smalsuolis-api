@@ -2,11 +2,10 @@
 
 import moleculer, { Context } from 'moleculer';
 import { Action, Service } from 'moleculer-decorators';
+import wkx from 'wkx';
 import { App, APP_KEYS } from './apps.service';
-
 //@ts-ignore
 import Cron from '@r2d2bzh/moleculer-cron';
-import { wktToGeoJSON } from 'betterknown';
 import { isSameDay, subDays } from 'date-fns';
 import { Feature } from 'geojsonjs';
 import puppeteer, { Browser, Page } from 'puppeteer';
@@ -109,8 +108,10 @@ const getGeometryData = async (cadastralNumbers: string[]): Promise<Map<string, 
 
       const data: GeometryResponse = await response.json();
       data.items.forEach((item) => {
+        const geometry = wkx.Geometry.parse(item?.geometry?.data).toGeoJSON();
+
         const geom = {
-          geometry: wktToGeoJSON(item?.geometry?.data?.replace('SRID=3346;', '')),
+          geometry: geometry,
           type: 'Feature',
         };
         geomMap.set(item?.cadastral_number, geom);
