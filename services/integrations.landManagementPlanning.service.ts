@@ -13,7 +13,7 @@ import { IntegrationsMixin } from '../mixins/integrations.mixin';
 import { parcelsSearch } from '../utils/boundaries';
 import { Event, toEventBodyMarkdown } from './events.service';
 
-export interface LandManagementPlanning {
+interface LandManagementPlanning {
   startAt: string;
   serviceNo: string;
   name: string;
@@ -21,21 +21,6 @@ export interface LandManagementPlanning {
   externalId: string;
   status: string;
   geom: any;
-}
-
-export interface GeometryResponse {
-  items: {
-    unique_number: number;
-    cadastral_number: string;
-    updated_at: string;
-    area_ha: number;
-    geometry: { srid: number; data: string };
-  }[];
-  total: number;
-  current_page: string;
-  current_page_backwards: string;
-  previous_page: string;
-  next_page: string;
 }
 
 const isYesterday = (date: Date) => isSameDay(date, subDays(new Date(), 1));
