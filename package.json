@@ -46,7 +46,7 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
-    "@hey-api/openapi-ts": "^0.48.2",
+    "@hey-api/openapi-ts": "^0.53.11",
     "@moleculer/database": "github:ambrazasp/moleculerjs-database",
     "@r2d2bzh/moleculer-cron": "^0.1.4",
     "@sentry/node": "^7.114.0",
