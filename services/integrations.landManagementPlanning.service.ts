@@ -10,6 +10,7 @@ import { isSameDay, subDays } from 'date-fns';
 import { Feature } from 'geojsonjs';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { IntegrationsMixin } from '../mixins/integrations.mixin';
+import { parcelsSearch } from '../utils/boundaries';
 import { Event, toEventBodyMarkdown } from './events.service';
 
 export interface LandManagementPlanning {
@@ -78,18 +79,6 @@ const getBrowser = async (): Promise<Browser | null> => {
 };
 
 const getGeometryData = async (cadastralNumbers: string[]): Promise<Map<string, Feature>> => {
-  const url =
-    'https://boundaries.biip.lt/v1/parcels/search?sort_by=cadastral_number&sort_order=asc&geometry_output_format=ewkt&srid=3346&size=100';
-  const headers = {
-    accept: 'application/json',
-    'content-type': 'application/json',
-    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Linux"',
-    Referer: 'https://boundaries.biip.lt/',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-  };
-
   const geomMap = new Map();
   const chunkSize = 100;
 
@@ -100,13 +89,11 @@ const getGeometryData = async (cadastralNumbers: string[]): Promise<Map<string, 
         parcels: { cadastral_number: { exact: cadastralNumber } },
       }));
 
-      const response = await fetch(url, {
-        headers,
-        body: JSON.stringify({ filters }),
-        method: 'POST',
+      const data = await parcelsSearch({
+        requestBody: { filters },
+        size: 100,
       });
 
-      const data: GeometryResponse = await response.json();
       data.items.forEach((item) => {
         const geometry = wkx.Geometry.parse(item?.geometry?.data).toGeoJSON();
 

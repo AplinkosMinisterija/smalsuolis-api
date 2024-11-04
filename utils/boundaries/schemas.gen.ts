@@ -58,19 +58,11 @@ export const $Address = {
       description: 'Residential area information the address belongs to',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the address belongs to',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Point geometry of the address',
     },
   },
@@ -421,11 +413,7 @@ export const $CountyWithGeometry = {
       description: 'Date of creation of the county',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Geometry information of the county',
     },
   },
@@ -734,6 +722,81 @@ export const $CursorPage_Municipality_ = {
   title: 'CursorPage[Municipality]',
 } as const;
 
+export const $CursorPage_Parcel_ = {
+  properties: {
+    items: {
+      items: {
+        $ref: '#/components/schemas/Parcel',
+      },
+      type: 'array',
+      title: 'Items',
+    },
+    total: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Total',
+      description: 'Total items',
+    },
+    current_page: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Current Page',
+      description: 'Cursor to refetch the current page',
+    },
+    current_page_backwards: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Current Page Backwards',
+      description: 'Cursor to refetch the current page starting from the last item',
+    },
+    previous_page: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Previous Page',
+      description: 'Cursor for the previous page',
+    },
+    next_page: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Next Page',
+      description: 'Cursor for the next page',
+    },
+  },
+  type: 'object',
+  required: ['items'],
+  title: 'CursorPage[Parcel]',
+} as const;
+
 export const $CursorPage_ResidentialArea_ = {
   properties: {
     items: {
@@ -982,11 +1045,7 @@ export const $Eldership = {
       description: 'Area of the eldership in hectares',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the eldership belongs to',
     },
     created_at: {
@@ -1024,11 +1083,7 @@ export const $EldershipWithGeometry = {
       description: 'Area of the eldership in hectares',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the eldership belongs to',
     },
     created_at: {
@@ -1038,11 +1093,7 @@ export const $EldershipWithGeometry = {
       description: 'Date of creation of the eldership',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Geometry information of the eldership',
     },
   },
@@ -1240,11 +1291,7 @@ export const $Geometry = {
 export const $GeometryFilter = {
   properties: {
     method: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/GeometryFilterMethod',
-        },
-      ],
+      $ref: '#/components/schemas/GeometryFilterMethod',
       description: `Defines method used for filtering geometries:
 - **\`intersects\`**: filter geometries that intersects any portion of space with the specified geometry.
 - **\`contains\`**: filter geometries that are completely within the specified geometry.`,
@@ -1482,11 +1529,7 @@ export const $Municipality = {
       description: 'Name of the municipality',
     },
     county: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortCounty',
-        },
-      ],
+      $ref: '#/components/schemas/ShortCounty',
       description: 'County information the municipality belongs to',
     },
     area_ha: {
@@ -1524,11 +1567,7 @@ export const $MunicipalityWithGeometry = {
       description: 'Name of the municipality',
     },
     county: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortCounty',
-        },
-      ],
+      $ref: '#/components/schemas/ShortCounty',
       description: 'County information the municipality belongs to',
     },
     area_ha: {
@@ -1543,17 +1582,464 @@ export const $MunicipalityWithGeometry = {
       description: 'Date of creation of the municipality',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Geometry information of the municipality',
     },
   },
   type: 'object',
   required: ['code', 'feature_id', 'name', 'county', 'area_ha', 'created_at', 'geometry'],
   title: 'MunicipalityWithGeometry',
+} as const;
+
+export const $NumberFilter = {
+  properties: {
+    eq: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Eq',
+      description: 'Filter by equal number',
+    },
+    gt: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Gt',
+      description: 'Filter by greater than number',
+    },
+    gte: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Gte',
+      description: 'Filter by greater than or equal number',
+    },
+    lt: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Lt',
+      description: 'Filter by less than number',
+    },
+    lte: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Lte',
+      description: 'Filter by not equal number',
+    },
+  },
+  type: 'object',
+  title: 'NumberFilter',
+} as const;
+
+export const $Parcel = {
+  properties: {
+    unique_number: {
+      type: 'integer',
+      title: 'Unique Number',
+      description: 'Unique number of the parcel',
+    },
+    cadastral_number: {
+      type: 'string',
+      title: 'Cadastral Number',
+      description: 'Cadastral number of the parcel',
+    },
+    updated_at: {
+      type: 'string',
+      format: 'date',
+      title: 'Updated At',
+      description: 'Date of update of the parcel',
+    },
+    area_ha: {
+      type: 'number',
+      title: 'Area Ha',
+      description: 'Area of the parcel in hectares',
+    },
+    geometry: {
+      $ref: '#/components/schemas/Geometry',
+      description: 'Polygon geometry of the parcel',
+    },
+    status: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/Status',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Status of the parcel',
+    },
+    purpose: {
+      $ref: '#/components/schemas/Purpose',
+      description: 'Purpose of the parcel',
+    },
+    municipality: {
+      $ref: '#/components/schemas/ShortMunicipality',
+      description: 'Municipality information the parcel belongs to',
+    },
+  },
+  type: 'object',
+  required: [
+    'unique_number',
+    'cadastral_number',
+    'updated_at',
+    'area_ha',
+    'geometry',
+    'status',
+    'purpose',
+    'municipality',
+  ],
+  title: 'Parcel',
+} as const;
+
+export const $ParcelSearchFilterRequest = {
+  properties: {
+    statuses: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StatusTypesFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by statuses',
+    },
+    purpose_groups: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/PurposeGroupFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by purpose groups',
+    },
+    purposes: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/PurposeTypeFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by purposes',
+    },
+    geometry: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/GeometryFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by geometry',
+    },
+    counties: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/CountiesFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by counties',
+    },
+    municipalities: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/MunicipalitiesFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by municipalities',
+    },
+    parcels: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ParcelsFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by parcels',
+    },
+  },
+  type: 'object',
+  title: 'ParcelSearchFilterRequest',
+} as const;
+
+export const $ParcelsFilter = {
+  properties: {
+    unique_numbers: {
+      anyOf: [
+        {
+          items: {
+            type: 'integer',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Unique Numbers',
+      description: 'Filter by unique numbers',
+      examples: [[]],
+    },
+    unique_number: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by unique number',
+    },
+    cadastral_number: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by cadastral number',
+    },
+    area_ha: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/NumberFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by area',
+    },
+  },
+  type: 'object',
+  title: 'ParcelsFilter',
+} as const;
+
+export const $ParcelsSearchRequest = {
+  properties: {
+    filters: {
+      items: {
+        $ref: '#/components/schemas/ParcelSearchFilterRequest',
+      },
+      type: 'array',
+      title: 'Filters',
+      description: 'A list of filters to apply for searching parcels, combined using OR logic.',
+      default: [],
+    },
+  },
+  type: 'object',
+  title: 'ParcelsSearchRequest',
+} as const;
+
+export const $ParcelsSearchSortBy = {
+  type: 'string',
+  enum: ['unique_number', 'cadastral_number', 'updated_at', 'area_ha'],
+  title: 'ParcelsSearchSortBy',
+} as const;
+
+export const $Purpose = {
+  properties: {
+    purpose_id: {
+      type: 'integer',
+      title: 'Purpose Id',
+      description: 'Purpose ID',
+    },
+    purpose_group: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/PurposeGroup',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Purpose group',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'Purpose name',
+    },
+    full_name: {
+      type: 'string',
+      title: 'Full Name',
+      description: 'Purpose full name',
+    },
+    full_name_en: {
+      type: 'string',
+      title: 'Full Name En',
+      description: 'Purpose full name in english',
+    },
+  },
+  type: 'object',
+  required: ['purpose_id', 'purpose_group', 'name', 'full_name', 'full_name_en'],
+  title: 'Purpose',
+} as const;
+
+export const $PurposeGroup = {
+  properties: {
+    group_id: {
+      type: 'integer',
+      title: 'Group Id',
+      description: 'Purpose group ID',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'Purpose group name',
+    },
+    full_name: {
+      type: 'string',
+      title: 'Full Name',
+      description: 'Purpose group full name',
+    },
+  },
+  type: 'object',
+  required: ['group_id', 'name', 'full_name'],
+  title: 'PurposeGroup',
+} as const;
+
+export const $PurposeGroupFilter = {
+  properties: {
+    group_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'integer',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group Ids',
+      description: 'Filter by purpose group IDs',
+    },
+    name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by name',
+    },
+    full_name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by full name',
+    },
+  },
+  type: 'object',
+  title: 'PurposeGroupFilter',
+} as const;
+
+export const $PurposeTypeFilter = {
+  properties: {
+    purpose_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'integer',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Purpose Ids',
+      description: 'Filter by purpose IDs',
+    },
+    name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by name',
+    },
+    full_name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by full name',
+    },
+    full_name_en: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by full name in english',
+    },
+  },
+  type: 'object',
+  title: 'PurposeTypeFilter',
 } as const;
 
 export const $ResidentialArea = {
@@ -1574,11 +2060,7 @@ export const $ResidentialArea = {
       description: 'Name of the residential area',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the residential area belongs to',
     },
     area_ha: {
@@ -1616,11 +2098,7 @@ export const $ResidentialAreaWithGeometry = {
       description: 'Name of the residential area',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the residential area belongs to',
     },
     area_ha: {
@@ -1635,11 +2113,7 @@ export const $ResidentialAreaWithGeometry = {
       description: 'Date of creation of the residential area',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Geometry information of the residential area',
     },
   },
@@ -1785,19 +2259,11 @@ export const $Room = {
       description: 'Date of creation of the room address',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Point geometry of the address',
     },
     address: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortAddress',
-        },
-      ],
+      $ref: '#/components/schemas/ShortAddress',
       description: 'Address of the room',
     },
   },
@@ -2016,11 +2482,7 @@ export const $ShortAddress = {
       description: 'Residential area information the address belongs to',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the address belongs to',
     },
   },
@@ -2079,11 +2541,7 @@ export const $ShortMunicipality = {
       description: 'Name of the municipality',
     },
     county: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortCounty',
-        },
-      ],
+      $ref: '#/components/schemas/ShortCounty',
       description: 'County information the municipality belongs to',
     },
   },
@@ -2110,17 +2568,112 @@ export const $ShortResidentialArea = {
       description: 'Name of the residential area',
     },
     municipality: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortMunicipality',
-        },
-      ],
+      $ref: '#/components/schemas/ShortMunicipality',
       description: 'Municipality information the residential area belongs to',
     },
   },
   type: 'object',
   required: ['code', 'feature_id', 'name', 'municipality'],
   title: 'ShortResidentialArea',
+} as const;
+
+export const $Status = {
+  properties: {
+    status_id: {
+      type: 'integer',
+      title: 'Status Id',
+      description: 'Status ID',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'Status name',
+    },
+    name_en: {
+      type: 'string',
+      title: 'Name En',
+      description: 'Status name in english',
+    },
+    full_name: {
+      type: 'string',
+      title: 'Full Name',
+      description: 'Status full name',
+    },
+    full_name_en: {
+      type: 'string',
+      title: 'Full Name En',
+      description: 'Status full name in english',
+    },
+  },
+  type: 'object',
+  required: ['status_id', 'name', 'name_en', 'full_name', 'full_name_en'],
+  title: 'Status',
+} as const;
+
+export const $StatusTypesFilter = {
+  properties: {
+    status_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'integer',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Status Ids',
+      description: 'Filter by status IDs',
+    },
+    name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by name',
+    },
+    name_en: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by name in english',
+    },
+    full_name: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by full name',
+    },
+    full_name_en: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StringFilter',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Filter by full name in english',
+    },
+  },
+  type: 'object',
+  title: 'StatusTypesFilter',
 } as const;
 
 export const $Street = {
@@ -2157,11 +2710,7 @@ export const $Street = {
       description: 'Date of creation of the street',
     },
     residential_area: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortResidentialArea',
-        },
-      ],
+      $ref: '#/components/schemas/ShortResidentialArea',
       description: 'Residential area information the street belongs to',
     },
   },
@@ -2212,19 +2761,11 @@ export const $StreetWithGeometry = {
       description: 'Date of creation of the street',
     },
     residential_area: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/ShortResidentialArea',
-        },
-      ],
+      $ref: '#/components/schemas/ShortResidentialArea',
       description: 'Residential area information the street belongs to',
     },
     geometry: {
-      allOf: [
-        {
-          $ref: '#/components/schemas/Geometry',
-        },
-      ],
+      $ref: '#/components/schemas/Geometry',
       description: 'Line geometry information of the street',
     },
   },
