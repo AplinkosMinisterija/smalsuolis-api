@@ -201,32 +201,38 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
     let hasNextPage = true;
 
     while (hasNextPage) {
-      const itemsData = await page.evaluate(() => {
+      const itemsData = await page.evaluate(async () => {
+        async function generateExternalId(
+          item: LandManagementPlanning & { cadastralNumbers: string[] },
+        ) {
+          const inputString = item.startAt + item.serviceNo + item.cadastralNumbers.toString();
+          const buffer = new TextEncoder().encode(inputString);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+
         const items = document.querySelectorAll('#mainform\\:docs_data > tr');
         const cadastralNumberPattern = /\d+\/\d+:\d+/g;
 
-        const data = Array.from(items).reduce((acc, itemElement) => {
-          const values = Array.from(itemElement.querySelectorAll('td'));
+        const data = [];
+
+        for (const itemElement of items) {
+          const values = itemElement.querySelectorAll('td');
           const matches = values[2]?.innerText?.match(cadastralNumberPattern);
 
-          if (!matches?.length) return acc;
+          if (!matches?.length) continue;
 
           const item: any = { cadastralNumbers: matches };
 
           ['startAt', 'serviceNo', 'name', 'municipality', 'status'].forEach((label, index) => {
-            item[label] = values[index]?.innerText.trim() || null;
+            item[label] = values[index]?.innerText?.trim() || null;
           });
 
-          item.externalId = btoa(
-            encodeURIComponent(item.date + item.serviceNo + matches.toString()).replace(
-              /%([0-9A-F]{2})/g,
-              (_, p1) => String.fromCharCode(parseInt(p1, 16)),
-            ),
-          );
+          item.externalId = await generateExternalId(item);
 
-          acc.push(item);
-          return acc;
-        }, []);
+          data.push(item);
+        }
 
         return data;
       });
