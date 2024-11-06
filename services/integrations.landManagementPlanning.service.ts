@@ -133,7 +133,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
       await this.waitLoader(page);
     } catch (error) {
       console.error('Navigation Error:', error);
-      return false;
+      //return false;
     }
     return true;
   }
