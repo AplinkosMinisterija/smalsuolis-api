@@ -235,7 +235,8 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
             async function generateExternalId(
               item: LandManagementPlanning & { cadastralNumbers: string[] },
             ) {
-              const inputString = item.startAt + item.serviceNo + item.cadastralNumbers.toString();
+              const inputString =
+                item?.startAt + item?.serviceNo + item?.cadastralNumbers.toString();
               const buffer = new TextEncoder().encode(inputString);
               const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
               const hashArray = Array.from(new Uint8Array(hashBuffer));
