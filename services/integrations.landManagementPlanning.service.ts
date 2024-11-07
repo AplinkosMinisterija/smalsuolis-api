@@ -110,45 +110,35 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
   @Method
   async waitLoader(page: Page) {
-    try {
-      const waitIndicatorSelector = '#j_idt27_title';
-      await page.waitForSelector(waitIndicatorSelector, { visible: true, timeout: 5000 });
-      await page.waitForSelector(waitIndicatorSelector, { hidden: true });
-    } catch {}
+    const waitIndicatorSelector = '#j_idt27_title';
+    await page.waitForSelector(waitIndicatorSelector, { visible: true, timeout: 3000 });
+    await page.waitForSelector(waitIndicatorSelector, { hidden: true });
   }
 
   @Method
   async navigateToNextPage(page: Page): Promise<boolean> {
     const nextButtonSelector = 'a.ui-paginator-next';
-    try {
-      await page.waitForSelector(nextButtonSelector, { timeout: 2000 });
-      const isDisabled = await page.evaluate((selector) => {
-        const nextButton = document.querySelector(selector);
-        return nextButton && nextButton.classList.contains('ui-state-disabled');
-      }, nextButtonSelector);
 
-      if (isDisabled) return false;
+    await page.waitForSelector(nextButtonSelector, { timeout: 2000 });
+    const isDisabled = await page.evaluate((selector) => {
+      const nextButton = document.querySelector(selector);
+      return nextButton && nextButton.classList.contains('ui-state-disabled');
+    }, nextButtonSelector);
 
-      await page.click(nextButtonSelector);
-      await this.waitLoader(page);
-    } catch (error) {
-      console.error('Navigation Error:', error);
-      //return false;
-    }
+    if (isDisabled) return false;
+
+    await page.click(nextButtonSelector);
+    await this.waitLoader(page);
+
     return true;
   }
 
   @Method
-  async getBrowser(): Promise<Browser | null> {
-    try {
-      return await puppeteer.connect({
-        browserWSEndpoint: process.env.CHROME_WS_ENDPOINT || 'ws://localhost:9321',
-        acceptInsecureCerts: true,
-      });
-    } catch (error) {
-      console.error('Browser Connection Error:', error);
-      return null;
-    }
+  async getBrowser(): Promise<Browser> {
+    return await puppeteer.connect({
+      browserWSEndpoint: process.env.CHROME_WS_ENDPOINT || 'ws://localhost:9321',
+      acceptInsecureCerts: true,
+    });
   }
 
   @Method
@@ -187,55 +177,98 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
 
   @Method
   async scrapeData(url: string, initial: boolean, limit: number) {
-    const browser = await this.getBrowser();
-    if (!browser) return [];
+    const maxRetries = 3;
+
+    let browser;
+    let retries = 0;
+    while (retries < maxRetries) {
+      try {
+        browser = await this.getBrowser();
+        if (!browser) return [];
+        break;
+      } catch (error) {
+        retries++;
+      }
+    }
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle0' });
+    retries = 0;
+    while (retries < maxRetries) {
+      try {
+        await page.goto(url, { waitUntil: 'networkidle0' });
+        break;
+      } catch (error) {
+        retries++;
+      }
+    }
+
     const selectSelector = '#mainform\\:docs\\:j_id17';
-    await page.waitForSelector(selectSelector);
-    await page.select(selectSelector, '100');
-    await this.waitLoader(page);
+    retries = 0;
+    while (retries < maxRetries) {
+      try {
+        await page.waitForSelector(selectSelector);
+        await page.select(selectSelector, '100');
+        break;
+      } catch (error) {
+        retries++;
+      }
+    }
+
+    retries = 0;
+    while (retries < maxRetries) {
+      try {
+        await this.waitLoader(page);
+        break;
+      } catch (error) {
+        retries++;
+      }
+    }
 
     const data: any[] = [];
     let hasNextPage = true;
-
     while (hasNextPage) {
-      const itemsData = await page.evaluate(async () => {
-        async function generateExternalId(
-          item: LandManagementPlanning & { cadastralNumbers: string[] },
-        ) {
-          const inputString = item.startAt + item.serviceNo + item.cadastralNumbers.toString();
-          const buffer = new TextEncoder().encode(inputString);
-          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-        }
+      retries = 0;
+      let itemsData;
+      while (retries < maxRetries) {
+        try {
+          itemsData = await page.evaluate(async () => {
+            async function generateExternalId(
+              item: LandManagementPlanning & { cadastralNumbers: string[] },
+            ) {
+              const inputString = item.startAt + item.serviceNo + item.cadastralNumbers.toString();
+              const buffer = new TextEncoder().encode(inputString);
+              const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+              const hashArray = Array.from(new Uint8Array(hashBuffer));
+              return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+            }
 
-        const items = document.querySelectorAll('#mainform\\:docs_data > tr');
-        const cadastralNumberPattern = /\d+\/\d+:\d+/g;
+            const items = document.querySelectorAll('#mainform\\:docs_data > tr');
+            const cadastralNumberPattern = /\d+\/\d+:\d+/g;
 
-        const data = [];
+            const data = [];
+            for (const itemElement of items) {
+              const values = itemElement.querySelectorAll('td');
+              const matches = values[2]?.innerText?.match(cadastralNumberPattern);
 
-        for (const itemElement of items) {
-          const values = itemElement.querySelectorAll('td');
-          const matches = values[2]?.innerText?.match(cadastralNumberPattern);
+              if (!matches?.length) continue;
 
-          if (!matches?.length) continue;
+              const item: any = { cadastralNumbers: matches };
 
-          const item: any = { cadastralNumbers: matches };
+              ['startAt', 'serviceNo', 'name', 'municipality', 'status'].forEach((label, index) => {
+                item[label] = values[index]?.innerText?.trim() || null;
+              });
 
-          ['startAt', 'serviceNo', 'name', 'municipality', 'status'].forEach((label, index) => {
-            item[label] = values[index]?.innerText?.trim() || null;
+              item.externalId = await generateExternalId(item);
+              data.push(item);
+            }
+
+            return data;
           });
-
-          item.externalId = await generateExternalId(item);
-
-          data.push(item);
+          break;
+        } catch (error) {
+          retries++;
         }
-
-        return data;
-      });
+      }
 
       if (limit) {
         data.push(...itemsData);
@@ -251,7 +284,16 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         data.push(...itemsData);
       }
 
-      hasNextPage = await this.navigateToNextPage(page);
+      retries = 0;
+      while (retries < maxRetries) {
+        try {
+          hasNextPage = await this.navigateToNextPage(page);
+          break;
+        } catch (error) {
+          retries++;
+          if (retries === maxRetries) hasNextPage = false;
+        }
+      }
     }
 
     await browser.close();
