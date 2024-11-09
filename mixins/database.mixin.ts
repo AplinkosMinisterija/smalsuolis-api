@@ -160,6 +160,14 @@ export default function (opts: any = {}) {
         return;
       },
 
+      async removeMany(ctx: any) {
+        return this.removeEntities(ctx, {
+          query: {
+            id: { $in: ctx.params.id },
+          },
+        });
+      },
+
       async removeAllEntities(ctx: any) {
         return await this.clearEntities(ctx);
       },

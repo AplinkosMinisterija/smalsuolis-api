@@ -4,6 +4,7 @@ import { App, APP_TYPE } from '../services/apps.service';
 import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
 import { Event } from '../services/events.service';
 import { DBPagination } from '../types';
+import { cpuUsage } from 'node:process';
 
 export type IntegrationStats = {
   total: number;
@@ -140,7 +141,10 @@ export function IntegrationsMixin() {
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
+        const startUsage = process.cpuUsage();
+
         while (itemsCount > 0) {
+          console.log(cpuUsage(startUsage));
           // remove with pagination
           const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
@@ -163,10 +167,15 @@ export function IntegrationsMixin() {
           );
 
           for (const e of invalidEvents) {
-            await ctx.call('events.remove', { id: e.id });
+            // await ctx.call('events.remove', { id: e.id });
             this.addTotal();
             this.addInvalid();
             this.stats.invalid.removed++;
+          }
+
+          const eventIds = invalidEvents.map((e) => e.id);
+          if (eventIds?.length) {
+            await ctx.call('events.removeMany', { id: eventIds });
           }
 
           const progress = this.calcProgression(totalCount - itemsCount, totalCount, startTime);
