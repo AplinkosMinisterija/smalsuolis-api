@@ -132,30 +132,27 @@ export function IntegrationsMixin() {
           app: { $in: apps.map((a) => a.id) },
         };
 
-        let itemsCount: number = await ctx.call('events.count', { query, scope: false });
-        const totalCount = itemsCount;
-        let page = 1;
+        const totalCount: number = await ctx.call('events.count', { query, scope: false });
         this.stats.invalid.removed = 0;
         const startTime = new Date();
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
-        while (itemsCount > 0) {
-          // remove with pagination
+        const pageSize = 10000;
+
+        for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
           const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
               query,
-              pageSize: 10000,
+              pageSize,
               page,
               fields,
+              sort: 'id',
               scope: false, // needed for not skipping any events
             });
 
-          itemsCount = itemsCount - eventsPage.rows.length;
-          page++;
-
           if (!eventsPage.rows.length) {
-            itemsCount = 0;
+            continue;
           }
 
           const invalidEvents = eventsPage.rows.filter(
@@ -163,13 +160,17 @@ export function IntegrationsMixin() {
           );
 
           for (const e of invalidEvents) {
-            await ctx.call('events.remove', { id: e.id });
             this.addTotal();
             this.addInvalid();
             this.stats.invalid.removed++;
           }
 
-          const progress = this.calcProgression(totalCount - itemsCount, totalCount, startTime);
+          const eventIds = invalidEvents.map((e) => e.id);
+          if (eventIds?.length) {
+            await ctx.call('events.removeMany', { id: eventIds });
+          }
+
+          const progress = this.calcProgression(page * pageSize, totalCount, startTime);
           this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },

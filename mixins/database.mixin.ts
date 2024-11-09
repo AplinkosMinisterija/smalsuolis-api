@@ -160,6 +160,14 @@ export default function (opts: any = {}) {
         return;
       },
 
+      async removeMany(ctx: any) {
+        // moleculer removeEntities doesn't have great garbage collection
+        // it increases CPU until it crashes if called many times
+        const adapter = await this.getAdapter(ctx);
+        const table = adapter.getTable();
+        return table.whereIn('id', ctx.params.id).update({ deletedAt: new Date() }, ['id']);
+      },
+
       async removeAllEntities(ctx: any) {
         return await this.clearEntities(ctx);
       },
