@@ -39,15 +39,6 @@ const addressCacheKey = 'integrations:infostatyba:addresses';
 export default class IntegrationsInfostatybaService extends moleculer.Service {
   @Action({
     timeout: 0,
-  })
-  async test(ctx: Context) {
-    this.startIntegration();
-    const { apps } = await this.getDokTypesData(ctx);
-
-    await this.cleanupInvalidEvents(ctx, apps);
-  }
-  @Action({
-    timeout: 0,
     params: {
       limit: {
         type: 'number',
