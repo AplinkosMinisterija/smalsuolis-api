@@ -4,7 +4,6 @@ import { App, APP_TYPE } from '../services/apps.service';
 import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
 import { Event } from '../services/events.service';
 import { DBPagination } from '../types';
-import { cpuUsage } from 'node:process';
 
 export type IntegrationStats = {
   total: number;
