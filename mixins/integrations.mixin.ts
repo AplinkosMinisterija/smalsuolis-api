@@ -135,28 +135,25 @@ export function IntegrationsMixin() {
 
         let itemsCount: number = await ctx.call('events.count', { query, scope: false });
         const totalCount = itemsCount;
-        let page = 1;
         this.stats.invalid.removed = 0;
         const startTime = new Date();
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
         const startUsage = process.cpuUsage();
+        let pageSize = 10000;
 
-        while (itemsCount > 0) {
+        for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
           console.log(cpuUsage(startUsage));
-          // remove with pagination
-          const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
+          let eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
               query,
-              pageSize: 10000,
+              pageSize,
               page,
               fields,
+              sort: 'id',
               scope: false, // needed for not skipping any events
             });
-
-          itemsCount = itemsCount - eventsPage.rows.length;
-          page++;
 
           if (!eventsPage.rows.length) {
             itemsCount = 0;
@@ -167,7 +164,6 @@ export function IntegrationsMixin() {
           );
 
           for (const e of invalidEvents) {
-            // await ctx.call('events.remove', { id: e.id });
             this.addTotal();
             this.addInvalid();
             this.stats.invalid.removed++;
@@ -178,7 +174,7 @@ export function IntegrationsMixin() {
             await ctx.call('events.removeMany', { id: eventIds });
           }
 
-          const progress = this.calcProgression(totalCount - itemsCount, totalCount, startTime);
+          const progress = this.calcProgression(page * pageSize, totalCount, startTime);
           this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },
