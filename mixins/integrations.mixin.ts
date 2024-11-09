@@ -133,19 +133,16 @@ export function IntegrationsMixin() {
           app: { $in: apps.map((a) => a.id) },
         };
 
-        let itemsCount: number = await ctx.call('events.count', { query, scope: false });
-        const totalCount = itemsCount;
+        const totalCount: number = await ctx.call('events.count', { query, scope: false });
         this.stats.invalid.removed = 0;
         const startTime = new Date();
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
-        const startUsage = process.cpuUsage();
-        let pageSize = 10000;
+        const pageSize = 10000;
 
         for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
-          console.log(cpuUsage(startUsage));
-          let eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
+          const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
               query,
               pageSize,
@@ -156,7 +153,7 @@ export function IntegrationsMixin() {
             });
 
           if (!eventsPage.rows.length) {
-            itemsCount = 0;
+            continue;
           }
 
           const invalidEvents = eventsPage.rows.filter(
