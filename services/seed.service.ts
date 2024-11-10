@@ -45,7 +45,7 @@ const APPS = {
     type: APP_TYPE[APP_KEYS.zemetvarkosPlanavimas],
     name: 'Žemėtvarkos planavimas',
     description: 'Žemėtvarkos planavimo informacinė sistema',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" ><path d="m14.656 6.88l-14.656 9.984 9.952 4.96 12.48-12.256-7.776-2.688zm8.416 2.88l-7.424 7.584 7.84 6.304 8.544-10.752-8.96-3.136zm-7.872 8.064l-4.48 4.352 9.952 4.96 2.4-2.816-7.872-6.496z" fill="#1B4C28"/></svg>`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="m14.656 6.88l-14.656 9.984 9.952 4.96 12.48-12.256-7.776-2.688zm8.416 2.88l-7.424 7.584 7.84 6.304 8.544-10.752-8.96-3.136zm-7.872 8.064l-4.48 4.352 9.952 4.96 2.4-2.816-7.872-6.496z" fill="black"/></svg>`,
   },
 };
 
