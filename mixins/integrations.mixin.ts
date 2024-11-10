@@ -1,8 +1,8 @@
-import { Context } from 'moleculer';
-import { Tag } from '../services/tags.service';
-import { App, APP_TYPE } from '../services/apps.service';
 import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
+import { Context } from 'moleculer';
+import { App, APP_TYPE } from '../services/apps.service';
 import { Event } from '../services/events.service';
+import { Tag } from '../services/tags.service';
 import { DBPagination } from '../types';
 
 export type IntegrationStats = {
@@ -122,6 +122,57 @@ export function IntegrationsMixin() {
           this.stats.valid.total++;
         }
       },
+
+      async createOrUpdateEvents(
+        ctx: Context,
+        app: App,
+        events: Partial<Event>[] & { appId: number },
+        initial: boolean = false,
+      ) {
+        this.addTotal(events.length);
+
+        const externalIds = events.map((e) => e.externalId).filter((id) => id);
+        const existingEvents: Event[] = await ctx.call('events.find', {
+          query: {
+            externalId: { $in: externalIds },
+            app: app.id,
+          },
+        });
+
+        const existingEventsMap = new Map(existingEvents.map((event) => [event.externalId, event]));
+
+        for (const event of events) {
+          if (!event.externalId) {
+            this.addInvalid();
+            continue;
+          }
+
+          // Let's save old events (older than 30 days) as initial events
+          initial = initial || differenceInDays(new Date(), event.startAt) > 30;
+          if (initial) {
+            event.createdAt = event.startAt;
+          }
+
+          this.validExternalIds.push(event.externalId);
+
+          const existingEvent = existingEventsMap.get(event.externalId);
+
+          if (existingEvent?.id) {
+            await ctx.call('events.update', {
+              id: Number(existingEvent.id),
+              ...event,
+            });
+            this.stats.valid.updated++;
+            this.stats.valid.total++;
+          } else {
+            await ctx.call('events.create', event);
+
+            this.stats.valid.inserted++;
+            this.stats.valid.total++;
+          }
+        }
+      },
+
       async cleanupInvalidEvents(ctx: Context, apps: App | App[]) {
         if (!Array.isArray(apps)) {
           apps = [apps];
@@ -174,8 +225,8 @@ export function IntegrationsMixin() {
           this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },
-      addTotal() {
-        this.stats.total++;
+      addTotal(amount = 1) {
+        this.stats.total += amount;
       },
       addInvalid() {
         this.stats.invalid.total++;

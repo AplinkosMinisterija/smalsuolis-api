@@ -12,7 +12,7 @@ import { Feature } from 'geojsonjs';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { IntegrationsMixin } from '../mixins/integrations.mixin';
 import { parcelsSearch } from '../utils/boundaries';
-import { Event, toEventBodyMarkdown } from './events.service';
+import { toEventBodyMarkdown } from './events.service';
 
 interface LandManagementPlanning {
   startAt: string;
@@ -86,13 +86,13 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
       [],
     );
 
-    for (const entry of dataWithGeom) {
+    const events = dataWithGeom.map((entry) => {
       const bodyJSON = [
         { title: 'Būsena', value: entry?.status || '-' },
         { title: 'Paslaugos numeris', value: entry?.serviceNo || '-' },
       ];
 
-      const event: Partial<Event> = {
+      return {
         name: entry.name,
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(entry.startAt),
@@ -101,9 +101,9 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         isFullDay: true,
         externalId: entry.externalId,
       };
+    });
 
-      await this.createOrUpdateEvent(ctx, app, event, !!initial);
-    }
+    await this.createOrUpdateEvents(ctx, app, events, initial);
 
     return this.finishIntegration();
   }
