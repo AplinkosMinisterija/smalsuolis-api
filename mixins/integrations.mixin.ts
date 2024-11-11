@@ -106,7 +106,7 @@ export function IntegrationsMixin() {
           event.createdAt = event.startAt;
         }
 
-        this.validExternalIds.push(event.externalId);
+        this.validExternalIds.add(event.externalId);
 
         if (existingEvent?.id) {
           await ctx.call('events.update', {
@@ -127,7 +127,7 @@ export function IntegrationsMixin() {
           apps = [apps];
         }
 
-        const validExternalIds = this.validExternalIds || [];
+        const validExternalIds = this.validExternalIds || new Set();
         const query = {
           app: { $in: apps.map((a) => a.id) },
         };
@@ -140,7 +140,7 @@ export function IntegrationsMixin() {
 
         const pageSize = 5000;
 
-        for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
+        for (let page = 1; page <= Math.ceil(totalCount / pageSize); page++) {
           const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
               query,
@@ -156,7 +156,7 @@ export function IntegrationsMixin() {
           }
 
           const invalidEvents = eventsPage.rows.filter(
-            (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt && !!item.id,
+            (item) => !validExternalIds.has(item.externalId) && !item.deletedAt && !!item.id,
           );
 
           const eventIds = invalidEvents.map((e) => e.id);
@@ -178,7 +178,7 @@ export function IntegrationsMixin() {
         this.stats.invalid.total += count;
       },
       startIntegration(): IntegrationStats {
-        this.validExternalIds = [];
+        this.validExternalIds = new Set();
         this.stats = {
           total: 0,
           valid: {
