@@ -156,7 +156,7 @@ export function IntegrationsMixin() {
           }
 
           const invalidEvents = eventsPage.rows.filter(
-            (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt,
+            (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt && !!item.id,
           );
 
           const eventIds = invalidEvents.map((e) => e.id);
