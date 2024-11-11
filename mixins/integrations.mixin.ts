@@ -155,16 +155,19 @@ export function IntegrationsMixin() {
             continue;
           }
 
-          const invalidEvents = eventsPage.rows.filter(
-            (item) => !validExternalIds.has(item.externalId) && !item.deletedAt && !!item.id,
-          );
+          const invalidEventsIds = eventsPage.rows
+            .filter(
+              (item) => !validExternalIds.has(item.externalId) && !item.deletedAt && !!item.id,
+            )
+            .map((e) => e.id);
 
-          const eventIds = invalidEvents.map((e) => e.id);
-          if (eventIds?.length) {
-            await ctx.call('events.removeMany', { id: eventIds });
-            this.addTotal(eventIds.length);
-            this.addInvalid(eventIds.length);
-            this.stats.invalid.removed += eventIds.length;
+          const invalidEventsCount = invalidEventsIds?.length || 0;
+
+          if (invalidEventsCount) {
+            await ctx.call('events.removeMany', { id: invalidEventsIds });
+            this.addTotal(invalidEventsCount);
+            this.addInvalid(invalidEventsCount);
+            this.stats.invalid.removed += invalidEventsCount;
           }
 
           const progress = this.calcProgression(page * pageSize, totalCount, startTime);
