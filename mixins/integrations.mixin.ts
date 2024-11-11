@@ -166,7 +166,6 @@ export function IntegrationsMixin() {
             this.stats.valid.total++;
           } else {
             await ctx.call('events.create', event);
-
             this.stats.valid.inserted++;
             this.stats.valid.total++;
           }
