@@ -138,7 +138,7 @@ export function IntegrationsMixin() {
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
-        const pageSize = 10000;
+        const pageSize = 5000;
 
         for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
           const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
@@ -159,10 +159,10 @@ export function IntegrationsMixin() {
             (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt,
           );
 
-          for (const e of invalidEvents) {
-            this.addTotal();
-            this.addInvalid();
-            this.stats.invalid.removed++;
+          if (invalidEvents.length) {
+            this.addTotal(invalidEvents.length);
+            this.addInvalid(invalidEvents.length);
+            this.stats.invalid.removed += invalidEvents.length;
           }
 
           const eventIds = invalidEvents.map((e) => e.id);
@@ -174,11 +174,11 @@ export function IntegrationsMixin() {
           this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },
-      addTotal() {
-        this.stats.total++;
+      addTotal(count: number = 1) {
+        this.stats.total += count;
       },
-      addInvalid() {
-        this.stats.invalid.total++;
+      addInvalid(count: number = 1) {
+        this.stats.invalid.total += count;
       },
       startIntegration(): IntegrationStats {
         this.validExternalIds = [];
