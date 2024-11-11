@@ -159,15 +159,12 @@ export function IntegrationsMixin() {
             (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt,
           );
 
-          if (invalidEvents.length) {
-            this.addTotal(invalidEvents.length);
-            this.addInvalid(invalidEvents.length);
-            this.stats.invalid.removed += invalidEvents.length;
-          }
-
           const eventIds = invalidEvents.map((e) => e.id);
           if (eventIds?.length) {
             await ctx.call('events.removeMany', { id: eventIds });
+            this.addTotal(eventIds.length);
+            this.addInvalid(eventIds.length);
+            this.stats.invalid.removed += eventIds.length;
           }
 
           const progress = this.calcProgression(page * pageSize, totalCount, startTime);
