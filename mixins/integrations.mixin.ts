@@ -106,7 +106,7 @@ export function IntegrationsMixin() {
           event.createdAt = event.startAt;
         }
 
-        this.validExternalIds.push(event.externalId);
+        this.validExternalIds.add(event.externalId);
 
         if (existingEvent?.id) {
           await ctx.call('events.update', {
@@ -177,7 +177,7 @@ export function IntegrationsMixin() {
           apps = [apps];
         }
 
-        const validExternalIds = this.validExternalIds || [];
+        const validExternalIds = this.validExternalIds || new Set();
         const query = {
           app: { $in: apps.map((a) => a.id) },
         };
@@ -188,9 +188,9 @@ export function IntegrationsMixin() {
 
         const fields = ['id', 'deletedAt', 'externalId'];
 
-        const pageSize = 10000;
+        const pageSize = 5000;
 
-        for (let page = 1; page < Math.ceil(totalCount / pageSize); page++) {
+        for (let page = 1; page <= Math.ceil(totalCount / pageSize); page++) {
           const eventsPage: DBPagination<Event<null, 'id' | 'deletedAt' | 'externalId'>> =
             await ctx.call('events.list', {
               query,
@@ -205,33 +205,33 @@ export function IntegrationsMixin() {
             continue;
           }
 
-          const invalidEvents = eventsPage.rows.filter(
-            (item) => !validExternalIds.includes(item.externalId) && !item.deletedAt,
-          );
+          const invalidEventsIds = eventsPage.rows
+            .filter(
+              (item) => !validExternalIds.has(item.externalId) && !item.deletedAt && !!item.id,
+            )
+            .map((e) => e.id);
 
-          for (const e of invalidEvents) {
-            this.addTotal();
-            this.addInvalid();
-            this.stats.invalid.removed++;
-          }
+          const invalidEventsCount = invalidEventsIds?.length || 0;
 
-          const eventIds = invalidEvents.map((e) => e.id);
-          if (eventIds?.length) {
-            await ctx.call('events.removeMany', { id: eventIds });
+          if (invalidEventsCount) {
+            await ctx.call('events.removeMany', { id: invalidEventsIds });
+            this.addTotal(invalidEventsCount);
+            this.addInvalid(invalidEventsCount);
+            this.stats.invalid.removed += invalidEventsCount;
           }
 
           const progress = this.calcProgression(page * pageSize, totalCount, startTime);
           this.broker.logger.info(`${this.name} removing in progress: ${progress.text}`);
         }
       },
-      addTotal(amount = 1) {
-        this.stats.total += amount;
+      addTotal(count: number = 1) {
+        this.stats.total += count;
       },
-      addInvalid() {
-        this.stats.invalid.total++;
+      addInvalid(count: number = 1) {
+        this.stats.invalid.total += count;
       },
       startIntegration(): IntegrationStats {
-        this.validExternalIds = [];
+        this.validExternalIds = new Set();
         this.stats = {
           total: 0,
           valid: {
