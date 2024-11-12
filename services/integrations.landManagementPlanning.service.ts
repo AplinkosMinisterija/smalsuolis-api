@@ -187,6 +187,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         if (!browser) return [];
         break;
       } catch (error) {
+        console.error('Error getting browser instance:', error);
         retries++;
       }
     }
@@ -198,6 +199,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         await page.goto(url, { waitUntil: 'networkidle0' });
         break;
       } catch (error) {
+        console.error('Error navigating to URL:', error);
         retries++;
       }
     }
@@ -210,6 +212,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         await page.select(selectSelector, '100');
         break;
       } catch (error) {
+        console.error('Error selecting items per page:', error);
         retries++;
       }
     }
@@ -220,6 +223,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         await this.waitLoader(page);
         break;
       } catch (error) {
+        console.error('Error waiting for loader:', error);
         retries++;
       }
     }
@@ -267,6 +271,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
           });
           break;
         } catch (error) {
+          console.error('Error getting items data from page:', error);
           retries++;
         }
       }
@@ -291,6 +296,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
           hasNextPage = await this.navigateToNextPage(page);
           break;
         } catch (error) {
+          console.error('Error navigating to the next page:', error);
           retries++;
           if (retries === maxRetries) hasNextPage = false;
         }
