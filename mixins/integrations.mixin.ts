@@ -125,10 +125,14 @@ export function IntegrationsMixin() {
 
       async createOrUpdateEvents(
         ctx: Context,
-        apps: App[],
+        apps: App | App[],
         events: Partial<Event>[],
         initial: boolean = false,
       ) {
+        if (!Array.isArray(apps)) {
+          apps = [apps];
+        }
+
         this.addTotal(events.length);
 
         const externalIds = events.map((e) => e.externalId).filter((id) => id);
@@ -136,7 +140,7 @@ export function IntegrationsMixin() {
           mapping: 'externalId',
           query: {
             externalId: { $in: externalIds },
-            app: { $in: apps },
+            app: { $in: apps.map((a) => a.id) },
           },
         });
 

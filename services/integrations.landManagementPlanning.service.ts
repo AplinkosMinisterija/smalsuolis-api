@@ -106,7 +106,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
       };
     });
 
-    await this.createOrUpdateEvents(ctx, [app.id], events, initial);
+    await this.createOrUpdateEvents(ctx, app, events, initial);
 
     return this.finishIntegration();
   }
