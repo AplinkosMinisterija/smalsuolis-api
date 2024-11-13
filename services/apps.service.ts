@@ -3,18 +3,13 @@
 import moleculer from 'moleculer';
 import { Service } from 'moleculer-decorators';
 import DbConnection from '../mixins/database.mixin';
-import {
-  COMMON_FIELDS,
-  COMMON_DEFAULT_SCOPES,
-  COMMON_SCOPES,
-  EndpointType,
-  CommonFields,
-} from '../types';
+import { CommonFields, COMMON_DEFAULT_SCOPES, COMMON_SCOPES, EndpointType } from '../types';
 
 enum APP_TYPES {
   infostatyba = 'infostatyba',
   izuvinimas = 'izuvinimas',
   miskoKirtimai = 'miskoKirtimai',
+  zemetvarkosPlanavimas = 'zemetvarkosPlanavimas',
 }
 
 export const APP_KEYS = {
@@ -24,6 +19,7 @@ export const APP_KEYS = {
   infostatybaPaskirtiesKeitimas: `${APP_TYPES.infostatyba}-paskirties-keitimas`,
   miskoKirtimai: APP_TYPES.miskoKirtimai,
   izuvinimas: APP_TYPES.izuvinimas,
+  zemetvarkosPlanavimas: APP_TYPES.zemetvarkosPlanavimas,
 };
 
 export const APP_TYPE = {
@@ -33,6 +29,7 @@ export const APP_TYPE = {
   [APP_KEYS.infostatybaPaskirtiesKeitimas]: APP_TYPES.infostatyba,
   [APP_KEYS.miskoKirtimai]: APP_TYPES.miskoKirtimai,
   [APP_KEYS.izuvinimas]: APP_TYPES.izuvinimas,
+  [APP_KEYS.zemetvarkosPlanavimas]: APP_TYPES.zemetvarkosPlanavimas,
 };
 
 export interface App extends CommonFields {

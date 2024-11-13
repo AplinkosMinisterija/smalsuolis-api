@@ -283,6 +283,30 @@ export type CursorPage_Municipality_ = {
   next_page?: string | null;
 };
 
+export type CursorPage_Parcel_ = {
+  items: Array<Parcel>;
+  /**
+   * Total items
+   */
+  total?: number | null;
+  /**
+   * Cursor to refetch the current page
+   */
+  current_page?: string | null;
+  /**
+   * Cursor to refetch the current page starting from the last item
+   */
+  current_page_backwards?: string | null;
+  /**
+   * Cursor for the previous page
+   */
+  previous_page?: string | null;
+  /**
+   * Cursor for the next page
+   */
+  next_page?: string | null;
+};
+
 export type CursorPage_ResidentialArea_ = {
   items: Array<ResidentialArea>;
   /**
@@ -640,6 +664,195 @@ export type MunicipalityWithGeometry = {
   geometry: Geometry;
 };
 
+export type NumberFilter = {
+  /**
+   * Filter by equal number
+   */
+  eq?: number | null;
+  /**
+   * Filter by greater than number
+   */
+  gt?: number | null;
+  /**
+   * Filter by greater than or equal number
+   */
+  gte?: number | null;
+  /**
+   * Filter by less than number
+   */
+  lt?: number | null;
+  /**
+   * Filter by not equal number
+   */
+  lte?: number | null;
+};
+
+export type Parcel = {
+  /**
+   * Unique number of the parcel
+   */
+  unique_number: number;
+  /**
+   * Cadastral number of the parcel
+   */
+  cadastral_number: string;
+  /**
+   * Date of update of the parcel
+   */
+  updated_at: string;
+  /**
+   * Area of the parcel in hectares
+   */
+  area_ha: number;
+  /**
+   * Polygon geometry of the parcel
+   */
+  geometry: Geometry;
+  /**
+   * Status of the parcel
+   */
+  status: Status | null;
+  /**
+   * Purpose of the parcel
+   */
+  purpose: Purpose;
+  /**
+   * Municipality information the parcel belongs to
+   */
+  municipality: ShortMunicipality;
+};
+
+export type ParcelSearchFilterRequest = {
+  /**
+   * Filter by statuses
+   */
+  statuses?: StatusTypesFilter | null;
+  /**
+   * Filter by purpose groups
+   */
+  purpose_groups?: PurposeGroupFilter | null;
+  /**
+   * Filter by purposes
+   */
+  purposes?: PurposeTypeFilter | null;
+  /**
+   * Filter by geometry
+   */
+  geometry?: GeometryFilter | null;
+  /**
+   * Filter by counties
+   */
+  counties?: CountiesFilter | null;
+  /**
+   * Filter by municipalities
+   */
+  municipalities?: MunicipalitiesFilter | null;
+  /**
+   * Filter by parcels
+   */
+  parcels?: ParcelsFilter | null;
+};
+
+export type ParcelsFilter = {
+  /**
+   * Filter by unique numbers
+   */
+  unique_numbers?: Array<number> | null;
+  /**
+   * Filter by unique number
+   */
+  unique_number?: StringFilter | null;
+  /**
+   * Filter by cadastral number
+   */
+  cadastral_number?: StringFilter | null;
+  /**
+   * Filter by area
+   */
+  area_ha?: NumberFilter | null;
+};
+
+export type ParcelsSearchRequest = {
+  /**
+   * A list of filters to apply for searching parcels, combined using OR logic.
+   */
+  filters?: Array<ParcelSearchFilterRequest>;
+};
+
+export type ParcelsSearchSortBy = 'unique_number' | 'cadastral_number' | 'updated_at' | 'area_ha';
+
+export type Purpose = {
+  /**
+   * Purpose ID
+   */
+  purpose_id: number;
+  /**
+   * Purpose group
+   */
+  purpose_group: PurposeGroup | null;
+  /**
+   * Purpose name
+   */
+  name: string;
+  /**
+   * Purpose full name
+   */
+  full_name: string;
+  /**
+   * Purpose full name in english
+   */
+  full_name_en: string;
+};
+
+export type PurposeGroup = {
+  /**
+   * Purpose group ID
+   */
+  group_id: number;
+  /**
+   * Purpose group name
+   */
+  name: string;
+  /**
+   * Purpose group full name
+   */
+  full_name: string;
+};
+
+export type PurposeGroupFilter = {
+  /**
+   * Filter by purpose group IDs
+   */
+  group_ids?: Array<number> | null;
+  /**
+   * Filter by name
+   */
+  name?: StringFilter | null;
+  /**
+   * Filter by full name
+   */
+  full_name?: StringFilter | null;
+};
+
+export type PurposeTypeFilter = {
+  /**
+   * Filter by purpose IDs
+   */
+  purpose_ids?: Array<number> | null;
+  /**
+   * Filter by name
+   */
+  name?: StringFilter | null;
+  /**
+   * Filter by full name
+   */
+  full_name?: StringFilter | null;
+  /**
+   * Filter by full name in english
+   */
+  full_name_en?: StringFilter | null;
+};
+
 export type ResidentialArea = {
   /**
    * Unique code of the residential area
@@ -903,6 +1116,52 @@ export type ShortResidentialArea = {
    * Municipality information the residential area belongs to
    */
   municipality: ShortMunicipality;
+};
+
+export type Status = {
+  /**
+   * Status ID
+   */
+  status_id: number;
+  /**
+   * Status name
+   */
+  name: string;
+  /**
+   * Status name in english
+   */
+  name_en: string;
+  /**
+   * Status full name
+   */
+  full_name: string;
+  /**
+   * Status full name in english
+   */
+  full_name_en: string;
+};
+
+export type StatusTypesFilter = {
+  /**
+   * Filter by status IDs
+   */
+  status_ids?: Array<number> | null;
+  /**
+   * Filter by name
+   */
+  name?: StringFilter | null;
+  /**
+   * Filter by name in english
+   */
+  name_en?: StringFilter | null;
+  /**
+   * Filter by full name
+   */
+  full_name?: StringFilter | null;
+  /**
+   * Filter by full name in english
+   */
+  full_name_en?: StringFilter | null;
 };
 
 export type Street = {
@@ -1330,354 +1589,28 @@ export type RoomsGetData = {
 
 export type RoomsGetResponse = Room;
 
-export type GetHealthHealthGetResponse = HealthCheck;
-
-export type $OpenApiTs = {
-  '/v1/counties/search': {
-    post: {
-      req: CountiesSearchData;
-      res: {
-        /**
-         * A paginated list of counties matching the search criteria.
-         */
-        200: CursorPage_County_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/counties/{code}': {
-    get: {
-      req: CountiesGetData;
-      res: {
-        /**
-         * Details of the county with the specified code.
-         */
-        200: County;
-        /**
-         * County not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/counties/{code}/geometry': {
-    get: {
-      req: CountiesGetWithGeometryData;
-      res: {
-        /**
-         * Details of the county with the specified code, including its geometry.
-         */
-        200: CountyWithGeometry;
-        /**
-         * County not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/municipalities/search': {
-    post: {
-      req: MunicipalitiesSearchData;
-      res: {
-        /**
-         * A paginated list of municipalities matching the search criteria.
-         */
-        200: CursorPage_Municipality_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/municipalities/{code}': {
-    get: {
-      req: MunicipalitiesGetData;
-      res: {
-        /**
-         * Details of the municipality with the specified code.
-         */
-        200: Municipality;
-        /**
-         * Municipality not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/municipalities/{code}/geometry': {
-    get: {
-      req: MunicipalitiesGetWithGeometryData;
-      res: {
-        /**
-         * Details of the municipality with the specified code, including its geometry.
-         */
-        200: MunicipalityWithGeometry;
-        /**
-         * Municipality not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/elderships/search': {
-    post: {
-      req: EldershipsSearchData;
-      res: {
-        /**
-         * A paginated list of elderships matching the search criteria.
-         */
-        200: CursorPage_Eldership_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/elderships/{code}': {
-    get: {
-      req: EldershipsGetData;
-      res: {
-        /**
-         * Details of the eldership with the specified code.
-         */
-        200: Eldership;
-        /**
-         * Eldership not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/elderships/{code}/geometry': {
-    get: {
-      req: EldershipsGetWithGeometryData;
-      res: {
-        /**
-         * Details of the eldership with the specified code, including its geometry.
-         */
-        200: EldershipWithGeometry;
-        /**
-         * Eldership not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/residential-areas/search': {
-    post: {
-      req: ResidentialAreasSearchData;
-      res: {
-        /**
-         * A paginated list of residential areas matching the search criteria.
-         */
-        200: CursorPage_ResidentialArea_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/residential-areas/{code}': {
-    get: {
-      req: ResidentialAreasGetData;
-      res: {
-        /**
-         * Details of the residential area with the specified code.
-         */
-        200: ResidentialArea;
-        /**
-         * Residential area not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/residential-areas/{code}/geometry': {
-    get: {
-      req: ResidentialAreasGetWithGeometryData;
-      res: {
-        /**
-         * Details of the residential area with the specified code, including its geometry.
-         */
-        200: ResidentialAreaWithGeometry;
-        /**
-         * Residential area not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/streets/search': {
-    post: {
-      req: StreetsSearchData;
-      res: {
-        /**
-         * A paginated list of streets matching the search criteria.
-         */
-        200: CursorPage_Street_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/streets/{code}': {
-    get: {
-      req: StreetsGetData;
-      res: {
-        /**
-         * Details of the street with the specified code.
-         */
-        200: Street;
-        /**
-         * Street not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/streets/{code}/geometry': {
-    get: {
-      req: StreetsGetWithGeometryData;
-      res: {
-        /**
-         * Details of the street with the specified code, including its geometry.
-         */
-        200: StreetWithGeometry;
-        /**
-         * Street not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/addresses/search': {
-    post: {
-      req: AddressesSearchData;
-      res: {
-        /**
-         * A paginated list of addresses matching the search criteria.
-         */
-        200: CursorPage_Address_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/addresses/{code}': {
-    get: {
-      req: AddressesGetData;
-      res: {
-        /**
-         * Details of the address with the specified code.
-         */
-        200: Address;
-        /**
-         * Address not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/rooms/search': {
-    post: {
-      req: RoomsSearchData;
-      res: {
-        /**
-         * A paginated list of rooms matching the search criteria.
-         */
-        200: CursorPage_Room_;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/rooms/{code}': {
-    get: {
-      req: RoomsGetData;
-      res: {
-        /**
-         * Details of the room with the specified code.
-         */
-        200: Room;
-        /**
-         * Room not found
-         */
-        404: HTTPExceptionResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/health': {
-    get: {
-      res: {
-        /**
-         * Return HTTP Status Code 200 (OK)
-         */
-        200: HealthCheck;
-        /**
-         * Service Unavailable
-         */
-        503: HTTPExceptionResponse;
-      };
-    };
-  };
+export type ParcelsSearchData = {
+  /**
+   * Cursor for the next page
+   */
+  cursor?: string | null;
+  /**
+   * Specify the format for geometry output.
+   */
+  geometryOutputFormat?: GeometryOutputFormat;
+  requestBody: ParcelsSearchRequest;
+  /**
+   * Page size
+   */
+  size?: number;
+  sortBy?: ParcelsSearchSortBy;
+  sortOrder?: SearchSortOrder;
+  /**
+   * A spatial reference identifier (SRID) for geometry output.
+   */
+  srid?: number;
 };
+
+export type ParcelsSearchResponse = CursorPage_Parcel_;
+
+export type GetHealthHealthGetResponse = HealthCheck;

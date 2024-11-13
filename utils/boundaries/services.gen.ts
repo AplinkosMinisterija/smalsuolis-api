@@ -42,6 +42,8 @@ import type {
   RoomsSearchResponse,
   RoomsGetData,
   RoomsGetResponse,
+  ParcelsSearchData,
+  ParcelsSearchResponse,
   GetHealthHealthGetResponse,
 } from './types.gen';
 
@@ -592,6 +594,42 @@ export const roomsGet = (data: RoomsGetData): CancelablePromise<RoomsGetResponse
     },
     errors: {
       404: 'Room not found',
+      422: 'Validation Error',
+    },
+  });
+};
+
+/**
+ * Search for parcels with pagination using various filters
+ * Search for parcels with pagination using various filters such as parcel unique numbers, cadastral numbers. Additionally, you can filter by GeoJson, EWKT geometry
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.sortBy
+ * @param data.sortOrder
+ * @param data.geometryOutputFormat Specify the format for geometry output.
+ * @param data.srid A spatial reference identifier (SRID) for geometry output.
+ * @param data.cursor Cursor for the next page
+ * @param data.size Page size
+ * @returns CursorPage_Parcel_ A paginated list of parcels matching the search criteria.
+ * @throws ApiError
+ */
+export const parcelsSearch = (
+  data: ParcelsSearchData,
+): CancelablePromise<ParcelsSearchResponse> => {
+  return __request(OpenAPI, {
+    method: 'POST',
+    url: '/v1/parcels/search',
+    query: {
+      sort_by: data.sortBy,
+      sort_order: data.sortOrder,
+      geometry_output_format: data.geometryOutputFormat,
+      srid: data.srid,
+      cursor: data.cursor,
+      size: data.size,
+    },
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
       422: 'Validation Error',
     },
   });

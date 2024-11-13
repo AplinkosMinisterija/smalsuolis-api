@@ -1,8 +1,8 @@
-import { Context } from 'moleculer';
-import { Tag } from '../services/tags.service';
-import { App, APP_TYPE } from '../services/apps.service';
 import { differenceInDays, formatDuration, intervalToDuration } from 'date-fns';
+import { Context } from 'moleculer';
+import { App, APP_TYPE } from '../services/apps.service';
 import { Event } from '../services/events.service';
+import { Tag } from '../services/tags.service';
 import { DBPagination } from '../types';
 
 export type IntegrationStats = {
@@ -122,6 +122,55 @@ export function IntegrationsMixin() {
           this.stats.valid.total++;
         }
       },
+
+      async createOrUpdateEvents(
+        ctx: Context,
+        apps: App[],
+        events: Partial<Event>[],
+        initial: boolean = false,
+      ) {
+        this.addTotal(events.length);
+
+        const externalIds = events.map((e) => e.externalId).filter((id) => id);
+        const existingEventsMap: { [key: string]: Event } = await ctx.call('events.find', {
+          mapping: 'externalId',
+          query: {
+            externalId: { $in: externalIds },
+            app: { $in: apps },
+          },
+        });
+
+        for (const event of events) {
+          if (!event.externalId) {
+            this.addInvalid();
+            continue;
+          }
+
+          // Let's save old events (older than 30 days) as initial events
+          initial = initial || differenceInDays(new Date(), event.startAt) > 30;
+          if (initial) {
+            event.createdAt = event.startAt;
+          }
+
+          this.validExternalIds.add(event.externalId);
+
+          const existingEvent = existingEventsMap[event.externalId];
+
+          if (existingEvent?.id) {
+            await ctx.call('events.update', {
+              id: Number(existingEvent.id),
+              ...event,
+            });
+            this.stats.valid.updated++;
+            this.stats.valid.total++;
+          } else {
+            await ctx.call('events.create', event);
+            this.stats.valid.inserted++;
+            this.stats.valid.total++;
+          }
+        }
+      },
+
       async cleanupInvalidEvents(ctx: Context, apps: App | App[]) {
         if (!Array.isArray(apps)) {
           apps = [apps];
