@@ -125,21 +125,20 @@ export function IntegrationsMixin() {
 
       async createOrUpdateEvents(
         ctx: Context,
-        app: App,
-        events: Partial<Event>[] & { appId: number },
+        apps: App[],
+        events: Partial<Event>[],
         initial: boolean = false,
       ) {
         this.addTotal(events.length);
 
         const externalIds = events.map((e) => e.externalId).filter((id) => id);
-        const existingEvents: Event[] = await ctx.call('events.find', {
+        const existingEventsMap: { [key: string]: Event } = await ctx.call('events.find', {
+          mapping: 'externalId',
           query: {
             externalId: { $in: externalIds },
-            app: app.id,
+            app: { $in: apps },
           },
         });
-
-        const existingEventsMap = new Map(existingEvents.map((event) => [event.externalId, event]));
 
         for (const event of events) {
           if (!event.externalId) {
@@ -153,9 +152,9 @@ export function IntegrationsMixin() {
             event.createdAt = event.startAt;
           }
 
-          this.validExternalIds.push(event.externalId);
+          this.validExternalIds.add(event.externalId);
 
-          const existingEvent = existingEventsMap.get(event.externalId);
+          const existingEvent = existingEventsMap[event.externalId];
 
           if (existingEvent?.id) {
             await ctx.call('events.update', {

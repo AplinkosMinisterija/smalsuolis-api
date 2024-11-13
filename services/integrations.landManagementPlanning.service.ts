@@ -36,9 +36,7 @@ interface LandManagementPlanning {
       cronTime: '0 5 * * *',
       timeZone: 'Europe/Vilnius',
       async onTick() {
-        await this.call('integrations.landManagementPlanning.getData', {
-          initial: false,
-        });
+        await this.call('integrations.landManagementPlanning.getData');
       },
     },
   ],
@@ -48,6 +46,11 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
     timeout: 0,
     params: {
       limit: { type: 'number', optional: true, default: 0 },
+      initial: {
+        type: 'boolean',
+        optional: true,
+        default: false,
+      },
     },
   })
   async getData(ctx: Context<{ limit: number; initial: boolean }>) {
@@ -97,7 +100,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(entry.startAt),
         geom: entry.geom,
-        app: app.id,
+        apps: [app.id],
         isFullDay: true,
         externalId: entry.externalId,
       };
