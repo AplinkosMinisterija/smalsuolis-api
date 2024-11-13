@@ -100,7 +100,7 @@ export default class IntegrationsLandManagementPlanningService extends moleculer
         body: toEventBodyMarkdown(bodyJSON),
         startAt: new Date(entry.startAt),
         geom: entry.geom,
-        apps: app.id,
+        app: app.id,
         isFullDay: true,
         externalId: entry.externalId,
       };
